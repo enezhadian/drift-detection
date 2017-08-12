@@ -31,15 +31,19 @@ repositories {
 }
 
 dependencies {
+    compile     'org.apache.spark:spark-core_2.11:2.2.0'
+    compile     'org.apache.spark:spark-streaming_2.11:2.2.0'
     testCompile 'junit:junit:4.12'
 }
 
 
-task run(type: JavaExec) {
-    dependsOn 'build'
+task run(type: Exec) {
+    dependsOn 'jar'
 
-    group       = 'Build'
-    description = 'Run the project.'
-    main        = 'Main'
-    classpath   = sourceSets.main.runtimeClasspath
+    def master = project.hasProperty('master') ? project.getProperty('master') : 'local[*]'
+    def host   = project.hasProperty('host')   ? project.getProperty('host')   : 'localhost'
+    def port   = project.hasProperty('port')   ? project.getProperty('port')   : '9999'
+
+    commandLine 'spark-submit', '--master', master, '--class', 'Main', jar.archivePath, host, port
+
 }
