@@ -24,8 +24,6 @@ import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 
 
-// TODO: Start with time-based separate windows and later add count-based and gradually sliding.
-// Categorical
 public class RoughSetAccuracyBasedDetector<Type> {
 
     RoughSetAccuracyBasedDetector(JavaDStream<Type> stream) {

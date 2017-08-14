@@ -28,11 +28,11 @@ import org.apache.spark.storage.StorageLevel;
 public class LineByLineTextFileReceiver extends Receiver<String> {
 
     public LineByLineTextFileReceiver(StorageLevel storageLevel, String path,
-                                      long lineReadLatencyInMillis) throws FileNotFoundException {
+                                      int linesPerSecond) throws FileNotFoundException {
         super(storageLevel);
 
         this.path = path;
-        this.lineReadLatencyInMillis = lineReadLatencyInMillis;
+        this.linesPerSecond = linesPerSecond;
         this.lastLineRead = 0;
     }
 
@@ -48,28 +48,39 @@ public class LineByLineTextFileReceiver extends Receiver<String> {
 
 
     private final String path;
-    private final long lineReadLatencyInMillis;
+    private final int linesPerSecond;
     private long lastLineRead;
 
+    // TODO: Improve precision of reading.
     private void receive() {
         try {
             // Open the file.
             BufferedReader reader = new BufferedReader(new InputStreamReader(
                     new FileInputStream(path), StandardCharsets.UTF_8));
 
-            // Read one line every `lineReadLatencyInMillis`
-            String line;
-            long nextLineToRead = 1;
+            // Skip already-read lines.
+            for (int i = 0; !isStopped() && i < lastLineRead && reader.readLine() != null; i++);
 
-            while (!isStopped() && (line = reader.readLine()) != null) {
-                if (nextLineToRead <= lastLineRead) {
-                    continue;
+            // Read a batch every second.
+            String line;
+            long loopStartTime, sleepTime;
+
+            while (!isStopped()) {
+                loopStartTime = System.currentTimeMillis();
+
+                for (int i = 0; i < linesPerSecond; i++) {
+                    line = reader.readLine();
+                    if (null == line) {
+                        stop("File is fully read.");
+                        break;
+                    }
+                    // Store read line into Spark's memory.
+                    store(line);
+                    lastLineRead++;
                 }
-                // Store read line into Spark's memory.
-                store(line);
-                lastLineRead = nextLineToRead;
-                nextLineToRead += 1;
-                Thread.sleep(lineReadLatencyInMillis);
+
+                sleepTime = 1000 - System.currentTimeMillis() + loopStartTime;
+                Thread.sleep(sleepTime);
             }
 
             // Close the file.

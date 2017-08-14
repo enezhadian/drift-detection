@@ -18,9 +18,6 @@
  *
  */
 
-import java.util.Arrays;
-import java.util.regex.Pattern;
-
 import org.apache.spark.SparkConf;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.Durations;
@@ -29,8 +26,6 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 
 public final class Main {
-
-    private static final Pattern SPACE = Pattern.compile(" ");
 
     public static void main(String[] args) throws Exception {
         // Create the context with a 1 second batch size.
@@ -41,7 +36,7 @@ public final class Main {
         context.sparkContext().setLogLevel("ERROR");
 
         JavaDStream<String> stream = context.receiverStream(new LineByLineTextFileReceiver(
-                StorageLevel.MEMORY_AND_DISK(), "data/input.txt", 200));
+                StorageLevel.MEMORY_AND_DISK(), "data/kddcup.data", 200));
         stream.foreachRDD((r, t) -> System.out.println(r.count() + " @ " + t));
 
         context.start();
