@@ -36,7 +36,7 @@ public final class Main {
         context.sparkContext().setLogLevel("ERROR");
 
         JavaDStream<String> stream = context.receiverStream(new LineByLineTextFileReceiver(
-                StorageLevel.MEMORY_AND_DISK(), "data/kddcup.data", 200));
+                StorageLevel.MEMORY_AND_DISK(), "data/kddcup.data", (short) 1000));
         stream.foreachRDD((r, t) -> System.out.println(r.count() + " @ " + t));
 
         context.start();

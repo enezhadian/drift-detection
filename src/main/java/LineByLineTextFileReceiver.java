@@ -28,7 +28,7 @@ import org.apache.spark.storage.StorageLevel;
 public class LineByLineTextFileReceiver extends Receiver<String> {
 
     public LineByLineTextFileReceiver(StorageLevel storageLevel, String path,
-                                      int linesPerSecond) throws FileNotFoundException {
+                                      short linesPerSecond) throws FileNotFoundException {
         super(storageLevel);
 
         this.path = path;
@@ -68,7 +68,7 @@ public class LineByLineTextFileReceiver extends Receiver<String> {
             while (!isStopped()) {
                 loopStartTime = System.currentTimeMillis();
 
-                for (int i = 0; i < linesPerSecond; i++) {
+                for (short i = 0; i < linesPerSecond; i++) {
                     line = reader.readLine();
                     if (null == line) {
                         stop("File is fully read.");
