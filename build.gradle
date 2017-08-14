@@ -44,6 +44,10 @@ task run(type: Exec) {
     def host   = project.hasProperty('host')   ? project.getProperty('host')   : 'localhost'
     def port   = project.hasProperty('port')   ? project.getProperty('port')   : '9999'
 
-    commandLine 'spark-submit', '--master', master, '--class', 'Main', jar.archivePath, host, port
-
+    commandLine 'spark-submit'
+    args        '--master', master,
+                '--conf', 'spark.streaming.stopGracefullyOnShutdown=true',
+                '--class', 'Main',
+                jar.archivePath,
+                host, port
 }
