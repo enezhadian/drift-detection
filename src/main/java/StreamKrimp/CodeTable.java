@@ -1,5 +1,5 @@
 /*
- *      settings.gradle
+ *      StreamKrimp/CodeTable.java
  *      Drift Detection
  *
  *  Copyright 2017 Ehsan Nezhadian
@@ -18,5 +18,22 @@
  *
  */
 
-rootProject.name = 'Drift Detection'
+package StreamKrimp;
 
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
+
+class CodeTable {
+
+    CodeTable(ImmutableList<ImmutableSet> streamSlice) {
+        // TODO: Implement code-table construction algorithm.
+    }
+
+    long encodedSizeOf(ImmutableList<ImmutableSet> streamSlice) {
+        // TODO: Implement cover and decode cost algorithms.
+        return 0;
+    }
+
+}

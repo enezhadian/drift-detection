@@ -1,5 +1,5 @@
 /*
- *      settings.gradle
+ *      StreamKrimp/DriftDetector.java
  *      Drift Detection
  *
  *  Copyright 2017 Ehsan Nezhadian
@@ -18,5 +18,7 @@
  *
  */
 
-rootProject.name = 'Drift Detection'
+package StreamKrimp;
 
+public class DriftDetector {
+}

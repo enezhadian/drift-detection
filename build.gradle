@@ -18,7 +18,6 @@
  *
  */
 
-group 'com.enezhadian'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
@@ -31,6 +30,7 @@ repositories {
 }
 
 dependencies {
+    compile     'com.google.guava:guava:23.0'
     testCompile 'junit:junit:4.12'
 }
 

@@ -1,5 +1,5 @@
 /*
- *      settings.gradle
+ *      StreamKrimp/ClosedFrequentSetMiner.java
  *      Drift Detection
  *
  *  Copyright 2017 Ehsan Nezhadian
@@ -18,5 +18,9 @@
  *
  */
 
-rootProject.name = 'Drift Detection'
+package StreamKrimp;
 
+
+public class ClosedFrequentSetMiner {
+    // TODO: Find or implement closed-frequent item-set mining algorithm.
+}
