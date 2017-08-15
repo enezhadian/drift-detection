@@ -19,12 +19,21 @@
  */
 
 import DataStreamReader.SetStreamReader;
+import StreamKrimp.ClosedFrequentSetMiner;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        SetStreamReader stream = new SetStreamReader("data/kddcup.data", ",");
+        SetStreamReader stream = new SetStreamReader("data/stream.txt", "\\s");
+
+        ImmutableList<ImmutableSet> batch = stream.nextBatch(1000);
+        ClosedFrequentSetMiner miner = new ClosedFrequentSetMiner(batch);
+
+        int  size = miner.closedFrequentSets(0.05).size();
+        System.out.println(size);
     }
 
 }

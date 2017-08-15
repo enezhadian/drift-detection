@@ -36,7 +36,7 @@ public class SetStreamReader {
         delimiter = Pattern.compile(delimiterRegex);
     }
 
-    ImmutableList<ImmutableSet> nextBatch(int maxSize) {
+    public ImmutableList<ImmutableSet> nextBatch(int maxSize) {
         ImmutableList.Builder<ImmutableSet> batchBuilder = new ImmutableList.Builder<>();
 
 

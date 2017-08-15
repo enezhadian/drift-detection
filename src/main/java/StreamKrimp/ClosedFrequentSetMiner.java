@@ -20,7 +20,64 @@
 
 package StreamKrimp;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
+import org.apache.spark.ml.fpm.FPGrowthModel;
+import org.apache.spark.sql.*;
+import org.apache.spark.sql.types.*;
+import org.apache.spark.ml.fpm.FPGrowth;
+
 
 public class ClosedFrequentSetMiner {
-    // TODO: Find or implement closed-frequent item-set mining algorithm.
+
+    public ClosedFrequentSetMiner(ImmutableList<ImmutableSet> streamSlice) {
+        this.streamSlice = streamSlice;
+
+    }
+
+    // TODO: Replace this. At the moment it uses Spark.mllib library to find all the frequent itemsets.
+    public ImmutableList<ImmutableSet> closedFrequentSets(double minSupport) {
+        // Create Spark session.
+        SparkSession session = SparkSession.builder().master("local[*]").getOrCreate();
+        session.sparkContext().setLogLevel("OFF");
+
+        // Convert Immutable list of sets to list of Spark rows.
+        List<Row> data = new ArrayList<>();
+        for (ImmutableSet set : streamSlice) {
+            data.add(RowFactory.create(set.asList()));
+        }
+
+        // Create schema for data frame.
+        StructType schema = new StructType(new StructField[]{ new StructField(
+                "items", new ArrayType(DataTypes.StringType, true), false, Metadata.empty())
+        });
+
+        // Create a data frame for sets of items.
+        Dataset<Row> setsDataFrame = session.createDataFrame(data, schema);
+
+        FPGrowthModel model = new FPGrowth()
+                .setItemsCol("items")
+                .setMinSupport(minSupport)
+                .fit(setsDataFrame);
+
+        List<Row> closedFrequents =  model.freqItemsets().collectAsList();
+        ImmutableList.Builder<ImmutableSet> listBuilder = new ImmutableList.Builder<>();
+        for (Row row : closedFrequents) {
+            ImmutableSet.Builder<String> setBuilder = new ImmutableSet.Builder<>();
+            for (Object item : row.getList(0)) {
+                setBuilder.add((String) item);
+            }
+            listBuilder.add(setBuilder.build());
+        }
+
+        return listBuilder.build();
+    }
+
+
+    private final ImmutableList<ImmutableSet> streamSlice;
+
 }
