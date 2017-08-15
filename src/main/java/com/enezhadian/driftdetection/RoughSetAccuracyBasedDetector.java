@@ -20,14 +20,42 @@
 
 package com.enezhadian.driftdetection;
 
+import scala.Tuple2;
+
 import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.streaming.Time;
 
 
 public class RoughSetAccuracyBasedDetector<Type> {
 
-    RoughSetAccuracyBasedDetector(JavaDStream<Type> stream) {
-        stream.window(Durations.seconds(2)).foreachRDD((r, t) -> System.out.println(t));
+    public RoughSetAccuracyBasedDetector(JavaDStream<Type> stream, double threshold) {
+        this.stream = stream;
+        this.threshold = threshold;
     }
+
+    public JavaDStream<Boolean> hasDrifted() {
+        // Add timestamp to each batch entry to keep track of batches.
+        JavaPairDStream streamWithTimestamp = stream.transformToPair((batch, time) ->
+                batch.mapToPair((entry) -> new Tuple2<>(time, entry)));
+
+        // Combine each batch with its next batch to compare consecutive batches for concept drift.
+        JavaPairDStream consecutiveBatchesStream = streamWithTimestamp.window(Durations.seconds(2));
+
+        consecutiveBatchesStream.transform((twoBatches) -> {
+            JavaPairRDD batches = (JavaPairRDD<Time, Type>) twoBatches;
+
+            // TODO: Calculate rough set accuracy for each batch with respect to elements in both.
+            return batches;
+        });
+
+        return stream.transform((rdd) -> rdd.map((x) -> true));
+    }
+
+
+    private final JavaDStream<Type> stream;
+    private final double threshold;
 
 }

@@ -18,29 +18,34 @@
  *
  */
 
-import org.apache.spark.SparkConf;
-import org.apache.spark.storage.StorageLevel;
-import org.apache.spark.streaming.Durations;
-import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.sql.*;
+import org.apache.spark.sql.streaming.GroupState;
+import org.apache.spark.sql.streaming.GroupStateTimeout;
+import org.apache.spark.sql.streaming.StreamingQuery;
 
 
 public final class Main {
 
     public static void main(String[] args) throws Exception {
-        // Create the context with a 1 second batch size.
-        SparkConf conf = new SparkConf().setAppName("Drift Detection");
-        JavaStreamingContext context = new JavaStreamingContext(conf, Durations.seconds(1));
+        // Create a Spark session.
+        SparkSession session = SparkSession
+                .builder()
+                .appName("Drift Detection")
+                .getOrCreate();
 
-        // Set logging level.
-        context.sparkContext().setLogLevel("ERROR");
+        // Surpass extra outputs of Spark.
+        session.sparkContext().setLogLevel("ERROR");
 
-        JavaDStream<String> stream = context.receiverStream(new LineByLineTextFileReceiver(
-                StorageLevel.MEMORY_AND_DISK(), "data/kddcup.data", (short) 1000));
-        stream.foreachRDD((r, t) -> System.out.println(r.count() + " @ " + t));
+        // TODO: Define a custom `DataStreamReader` if possible.
+        // TODO: Find out about trigger intervals for structured streaming.
+        // TODO: Find out about watermarking and discarding old data. -> withWatermark
+        // TODO: Find out how to apply `FPGrowth` on part of the a dataset.
 
-        context.start();
-        context.awaitTermination();
+        Dataset<Row> lines = session.readStream()
+                .format("socket")
+                .option("host", "localhost")
+                .option("port", 9999)
+                .load();
     }
 
 }
