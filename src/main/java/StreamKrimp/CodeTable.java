@@ -37,17 +37,42 @@ class CodeTable {
      * @param streamSlice
      * @return
      */
-    public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice) {
-        CodeTable codeTable = new CodeTable();
-        // TODO[1]: Implement KRIMP algorithm. (p. 679)
-        return codeTable;
-    }
+    public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice, double minSupport) {
+        ClosedFrequentSetMiner miner = new ClosedFrequentSetMiner(streamSlice);
 
-    /**
-     * TODO[4]: Documentation.
-     */
-    private CodeTable() {
-        entries = new ArrayList<>();
+        ImmutableList<ImmutableSet> candidateItemsets = miner.nonSingletonClosedFrequentItemsets(
+                minSupport);
+
+        // These three lists are used as to get results from `compressedLengthFor`.
+        List<ImmutableSet> itemsets = new ArrayList<>(miner.singletons());
+        List<Float> codeLengths = new ArrayList<>(candidateItemsets.size());
+        List<Float> candidateCodeLength = new ArrayList<>(candidateItemsets.size());
+
+
+        double currentLength = compressedLengthFor(streamSlice, itemsets, codeLengths);
+        double lengthWithItemset;
+
+        List<Float> temp;
+        for (ImmutableSet itemset : candidateItemsets) {
+            itemsets.add(itemset);
+            lengthWithItemset = compressedLengthFor(streamSlice, itemsets, candidateCodeLength);
+
+            if (lengthWithItemset <= currentLength) {
+                // Remove the itemset as it doesn't seem to contribute to the compression.
+                itemsets.remove(itemsets.size() - 1);
+            } else {
+                // Store code lengths, but also use already allocated space for future computations.
+                temp = codeLengths;
+                codeLengths = candidateCodeLength;
+                candidateCodeLength = temp;
+            }
+            // TODO[2]: Add pruning.
+        }
+
+        CodeTable codeTable = new CodeTable(
+                new ImmutableList.Builder<ImmutableSet>().addAll(itemsets).build(),
+                new ImmutableList.Builder<Float>().addAll(codeLengths).build());
+        return codeTable;
     }
 
     /**
@@ -66,17 +91,35 @@ class CodeTable {
      * @return
      */
     public double differenceWith(CodeTable other, ImmutableList<ImmutableSet> streamSlice) {
-        // TODO[1]: Calculate the code table difference for this and another code table.
-        return 0;
+        double l1 = this.totalLengthOf(streamSlice);
+        double l2 = other.totalLengthOf(streamSlice);
+        return (l2 - l1) / l1;
     }
 
 
-    private final List<CodeTableEntry> entries;
+    private final ImmutableList<ImmutableSet> itemsets;
+    private final ImmutableList<Float> codeLengths;
 
-    // TODO: Implement java.io.Serializable
-    private final class CodeTableEntry {
-        ImmutableSet itemset;
-        float codeLength;
+    /**
+     * TODO[4]: Documentation.
+     * @param streamSlice
+     * @param itemsets
+     * @param codeLengths
+     * @return
+     */
+    private static double compressedLengthFor(ImmutableList<ImmutableSet> streamSlice,
+                                              List<ImmutableSet> itemsets,
+                                              List<Float> codeLengths) {
+        // TODO[1]: Calculate the compressed length of `streamSlice`.
+        return 0;
+    }
+
+    /**
+     * TODO[4]: Documentation.
+     */
+    private CodeTable(ImmutableList<ImmutableSet> itemsets, ImmutableList<Float> codeLengths) {
+        this.itemsets = itemsets;
+        this.codeLengths = codeLengths;
     }
 
     /**
@@ -108,17 +151,6 @@ class CodeTable {
      */
     private double coverLengthOf(ImmutableSet transaction) {
         // TODO[1]: Calculate the cover size of a transaction using this code table.
-        return 0;
-    }
-
-    /**
-     * TODO[4]: Documentation.
-     * @param other
-     * @param streamSlice
-     * @return
-     */
-    private double improvementRateOver(CodeTable other, ImmutableList<ImmutableSet> streamSlice) {
-        // TODO[1]: Calculate the improvement rate of this over another code tables.
         return 0;
     }
 

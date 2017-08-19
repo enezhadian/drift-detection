@@ -34,13 +34,14 @@ import org.apache.spark.ml.fpm.FPGrowth;
 
 public class ClosedFrequentSetMiner {
 
+    // TODO[2]: Make this a static method instead of forcing users to instantiate it.
     public ClosedFrequentSetMiner(ImmutableList<ImmutableSet> streamSlice) {
         this.streamSlice = streamSlice;
 
     }
 
     // TODO[2]: Replace this. At the moment it uses Spark.mllib library to find all the frequent itemsets.
-    public ImmutableList<ImmutableSet> closedFrequentSets(double minSupport) {
+    public ImmutableList<ImmutableSet> nonSingletonClosedFrequentItemsets(double minSupport) {
         // Create Spark session.
         SparkSession session = SparkSession.builder().master("local[*]").getOrCreate();
         session.sparkContext().setLogLevel("OFF");
@@ -74,9 +75,14 @@ public class ClosedFrequentSetMiner {
             listBuilder.add(setBuilder.build());
         }
 
+        // TODO[1]: Fix the order of returned itemsets.
         return listBuilder.build();
     }
 
+    public ImmutableList<ImmutableSet> singletons() {
+        // TODO[1]: Return singletons.
+        return null;
+    }
 
     private final ImmutableList<ImmutableSet> streamSlice;
 

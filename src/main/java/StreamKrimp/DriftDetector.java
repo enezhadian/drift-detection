@@ -67,7 +67,7 @@ public class DriftDetector {
                     currentCodeTable, headForCandidateCodeTable);
 
             if (minCodeTableDifference <= difference) {
-                // TODO[1]: Report concept drift.
+                // TODO[2]: Report concept drift.
                 System.out.println("Concept drift detected.");
                 currentCodeTable = candidateCodeTable;
             } else {
