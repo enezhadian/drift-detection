@@ -53,26 +53,22 @@ public class DriftDetector {
      * TODO[4]: Documentation.
      */
     public void run() {
-        // TODO[1]: Implement StreamKrimp algorithm.
-        // Create a code table for the first block of data stream.
-        CodeTableAndStreamSlice tableAndSlice;
-        CodeTable currentCodeTable, candidateCodeTable;
-        ImmutableList<ImmutableSet> head;
+        CodeTable currentCodeTable;
 
-        tableAndSlice = findCodeTable();
-        currentCodeTable = tableAndSlice.codeTable;
+        // Create a code table for the first block of data stream.
+        findCodeTable();
+        currentCodeTable = candidateCodeTable;
 
         while (true) {
             discardBlocksConformingTo(currentCodeTable);
 
-            tableAndSlice = findCodeTable();
-            candidateCodeTable = tableAndSlice.codeTable;
-            head = tableAndSlice.streamSlice;
+            findCodeTable();
+            double difference = candidateCodeTable.differenceWith(
+                    currentCodeTable, headForCandidateCodeTable);
 
-            // TODO[1]: candidate head here!
-            double difference = candidateCodeTable.differenceWith(currentCodeTable, head);
             if (minCodeTableDifference <= difference) {
                 // TODO[1]: Report concept drift.
+                System.out.println("Concept drift detected.");
                 currentCodeTable = candidateCodeTable;
             } else {
                 stream.discard(blockSize);
@@ -88,18 +84,18 @@ public class DriftDetector {
     private final double minCodeTableDifference;
     private final double leaveOut;
 
-    private final class CodeTableAndStreamSlice {
-        public CodeTable codeTable;
-        public ImmutableList<ImmutableSet> streamSlice;
-    }
+    // Remember last code table and the corresponding head of stream found by `findCodeTable`.
+    private CodeTable candidateCodeTable;
+    private ImmutableList<ImmutableSet> headForCandidateCodeTable;
 
     /**
      * TODO[4]: Documentation.
      * @return
      */
-    private CodeTableAndStreamSlice findCodeTable() {
+    private void findCodeTable() {
         // TODO[1]: Implement FIND CODE TABLE ON STREAM algorithm.
-        return null;
+        candidateCodeTable = null;
+        headForCandidateCodeTable = null;
     }
 
     /**
