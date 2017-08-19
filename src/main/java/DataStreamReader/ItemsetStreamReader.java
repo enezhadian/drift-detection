@@ -27,18 +27,31 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 
-// TODO: Make this thread-safe to be able to respond to multiple stream processors.
-// TODO: Use an integer rather than keeping multiple copies of each item's name. For this purpose use a builder pattern to use the smallest integer type which can cover all items.
-public class SetStreamReader {
+// TODO[3]: Make this thread-safe to be able to respond to multiple stream processors.
+// TODO[3]: Use the smallest integer type rather than keeping multiple copies of each item's name.
+/**
+ * TODO[4]: Documentation.
+ */
+public class ItemsetStreamReader {
 
-    public SetStreamReader(String path, String delimiterRegex) throws FileNotFoundException {
+    /**
+     * TODO[4]: Documentation.
+     * @param path
+     * @param delimiterRegex
+     * @throws FileNotFoundException
+     */
+    public ItemsetStreamReader(String path, String delimiterRegex) throws FileNotFoundException {
         reader = new BufferedReader(new InputStreamReader(new FileInputStream(path)));
         delimiter = Pattern.compile(delimiterRegex);
     }
 
-    public ImmutableList<ImmutableSet> nextBatch(int maxSize) {
+    /**
+     * TODO[4]: Documentation.
+     * @param maxSize
+     * @return
+     */
+    public ImmutableList<ImmutableSet> nextBlock(int maxSize) {
         ImmutableList.Builder<ImmutableSet> batchBuilder = new ImmutableList.Builder<>();
-
 
         int size = 0;
         String line;

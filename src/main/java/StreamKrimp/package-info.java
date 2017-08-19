@@ -1,5 +1,5 @@
 /*
- *      Main.java
+ *      StreamKrimp/package-info.java
  *      Drift Detection
  *
  *  Copyright 2017 Ehsan Nezhadian
@@ -18,23 +18,7 @@
  *
  */
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
-import DataStreamReader.ItemsetStreamReader;
-import StreamKrimp.ClosedFrequentSetMiner;
-
-
-public class Main {
-
-    public static void main(String[] args) throws Exception {
-        ItemsetStreamReader stream = new ItemsetStreamReader("data/stream.txt", "\\s");
-
-        ImmutableList<ImmutableSet> batch = stream.nextBlock(1000);
-        ClosedFrequentSetMiner miner = new ClosedFrequentSetMiner(batch);
-
-        int  size = miner.closedFrequentSets(0.05).size();
-        System.out.println(size);
-    }
-
-}
+/**
+ * TODO[4]: Documentation
+ */
+package StreamKrimp;

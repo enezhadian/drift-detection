@@ -20,19 +20,105 @@
 
 package StreamKrimp;
 
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 
+/**
+ * TODO[4]: Documentation.
+ */
 class CodeTable {
 
-    CodeTable(ImmutableList<ImmutableSet> streamSlice) {
-        // TODO: Implement code-table construction algorithm.
+    /**
+     * TODO[4]: Documentation.
+     * @param streamSlice
+     * @return
+     */
+    public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice) {
+        CodeTable codeTable = new CodeTable();
+        // TODO[1]: Implement code-table construction algorithm.
+        return codeTable;
     }
 
-    long encodedSizeOf(ImmutableList<ImmutableSet> streamSlice) {
-        // TODO: Implement cover and decode cost algorithms.
+    /**
+     * TODO[4]: Documentation.
+     */
+    private CodeTable() {
+        entries = new ArrayList<>();
+    }
+
+    /**
+     * TODO[4]: Documentation.
+     * @param streamSlice
+     * @return
+     */
+    public double totalLengthOf(ImmutableList<ImmutableSet> streamSlice) {
+        return length() + lengthOf(streamSlice);
+    }
+
+    /**
+     * TODO[4]: Documentation.
+     * @param otherCodeTable
+     * @param streamSlice
+     * @return
+     */
+    public double differenceWith(CodeTable other, ImmutableList<ImmutableSet> streamSlice) {
+        // TODO[1]: Calculate the code table difference for this and another code table.
+        return 0;
+    }
+
+
+    // TODO: Implement java.io.Serializable
+    private final class CodeTableEntry {
+        ImmutableSet itemset;
+        float codeLength;
+    }
+
+    private final List<CodeTableEntry> entries;
+
+    /**
+     * TODO[4]: Documentation.
+     * @return
+     */
+    private double length() {
+        // TODO: Calculate encoded size of this code table.
+        return 0;
+    }
+
+    /**
+     *  TODO[4]: Documentation.
+     * @param streamSlice
+     * @return
+     */
+    private double lengthOf(ImmutableList<ImmutableSet> streamSlice) {
+        double totalCoverLength = 0;
+        for (ImmutableSet transaction : streamSlice) {
+            totalCoverLength = coverLengthOf(transaction);
+        }
+        return totalCoverLength;
+    }
+
+    /**
+     * Calculate the length of encoded cover for a transaction.
+     * @param transaction A transaction from data stream.
+     * @return the sum of code lengths for all the itemsets in the cover of given transaction.
+     */
+    private double coverLengthOf(ImmutableSet transaction) {
+        // TODO[1]: Calculate the cover size of a transaction using this code table.
+        return 0;
+    }
+
+    /**
+     * TODO[4]: Documentation.
+     * @param other
+     * @param streamSlice
+     * @return
+     */
+    private double improvementRateOver(CodeTable other, ImmutableList<ImmutableSet> streamSlice) {
+        // TODO[1]: Calculate the improvement rate of this over another code tables.
         return 0;
     }
 

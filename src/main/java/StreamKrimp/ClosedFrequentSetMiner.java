@@ -39,7 +39,7 @@ public class ClosedFrequentSetMiner {
 
     }
 
-    // TODO: Replace this. At the moment it uses Spark.mllib library to find all the frequent itemsets.
+    // TODO[2]: Replace this. At the moment it uses Spark.mllib library to find all the frequent itemsets.
     public ImmutableList<ImmutableSet> closedFrequentSets(double minSupport) {
         // Create Spark session.
         SparkSession session = SparkSession.builder().master("local[*]").getOrCreate();

@@ -20,5 +20,58 @@
 
 package StreamKrimp;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
+import DataStreamReader.ItemsetStreamReader;
+
+
 public class DriftDetector {
+
+    /**
+     * TODO[4]: Documentation
+     * @param streamReader
+     * @param blockSize
+     * @param minSupport
+     * @param maxImprovementRate
+     * @param minCodeTableDifference
+     * @param leaveOut
+     */
+    public DriftDetector(ItemsetStreamReader streamReader, int blockSize, double minSupport,
+                         double maxImprovementRate, double minCodeTableDifference,
+                         double leaveOut) {
+
+        this.streamReader = streamReader;
+        this.blockSize = blockSize;
+        this.minSupport = minSupport;
+        this.maxImprovementRate = maxImprovementRate;
+        this.minCodeTableDifference = minCodeTableDifference;
+        this.leaveOut = leaveOut;
+    }
+
+    /**
+     * TODO[4]: Documentation.
+     */
+    public void run() {
+        // TODO[1]: Implement StreamKrimp algorithm.
+    }
+
+
+    private final ItemsetStreamReader streamReader;
+    private final int blockSize;
+    private final double minSupport;
+    private final double maxImprovementRate;
+    private final double minCodeTableDifference;
+    private final double leaveOut;
+
+    /**
+     * TODO[4]: Documentation.
+     * @param codeTable
+     * @return
+     */
+    private ImmutableList<ImmutableSet> nextBlockSeeminglyNonConformingTo(CodeTable codeTable) {
+        // TODO[1]: Find the next batch which does not seem to belong to the given code table.
+        return null;
+    }
+
 }
