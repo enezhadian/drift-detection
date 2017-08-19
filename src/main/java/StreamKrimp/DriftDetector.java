@@ -30,18 +30,18 @@ public class DriftDetector {
 
     /**
      * TODO[4]: Documentation
-     * @param streamReader
+     * @param stream
      * @param blockSize
      * @param minSupport
      * @param maxImprovementRate
      * @param minCodeTableDifference
      * @param leaveOut
      */
-    public DriftDetector(ItemsetStreamReader streamReader, int blockSize, double minSupport,
+    public DriftDetector(ItemsetStreamReader stream, int blockSize, double minSupport,
                          double maxImprovementRate, double minCodeTableDifference,
                          double leaveOut) {
 
-        this.streamReader = streamReader;
+        this.stream = stream;
         this.blockSize = blockSize;
         this.minSupport = minSupport;
         this.maxImprovementRate = maxImprovementRate;
@@ -54,24 +54,61 @@ public class DriftDetector {
      */
     public void run() {
         // TODO[1]: Implement StreamKrimp algorithm.
+        // Create a code table for the first block of data stream.
+        CodeTableAndStreamSlice tableAndSlice;
+        CodeTable currentCodeTable, candidateCodeTable;
+        ImmutableList<ImmutableSet> head;
+
+        tableAndSlice = findCodeTable();
+        currentCodeTable = tableAndSlice.codeTable;
+
+        while (true) {
+            discardBlocksConformingTo(currentCodeTable);
+
+            tableAndSlice = findCodeTable();
+            candidateCodeTable = tableAndSlice.codeTable;
+            head = tableAndSlice.streamSlice;
+
+            // TODO[1]: candidate head here!
+            double difference = candidateCodeTable.differenceWith(currentCodeTable, head);
+            if (minCodeTableDifference <= difference) {
+                // TODO[1]: Report concept drift.
+                currentCodeTable = candidateCodeTable;
+            } else {
+                stream.discard(blockSize);
+            }
+        }
     }
 
 
-    private final ItemsetStreamReader streamReader;
+    private final ItemsetStreamReader stream;
     private final int blockSize;
     private final double minSupport;
     private final double maxImprovementRate;
     private final double minCodeTableDifference;
     private final double leaveOut;
 
+    private final class CodeTableAndStreamSlice {
+        public CodeTable codeTable;
+        public ImmutableList<ImmutableSet> streamSlice;
+    }
+
+    /**
+     * TODO[4]: Documentation.
+     * @return
+     */
+    private CodeTableAndStreamSlice findCodeTable() {
+        // TODO[1]: Implement FIND CODE TABLE ON STREAM algorithm.
+        return null;
+    }
+
     /**
      * TODO[4]: Documentation.
      * @param codeTable
      * @return
      */
-    private ImmutableList<ImmutableSet> nextBlockSeeminglyNonConformingTo(CodeTable codeTable) {
+    private void discardBlocksConformingTo(CodeTable codeTable) {
         // TODO[1]: Find the next batch which does not seem to belong to the given code table.
-        return null;
     }
 
 }

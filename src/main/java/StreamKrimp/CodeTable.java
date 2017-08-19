@@ -39,7 +39,7 @@ class CodeTable {
      */
     public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice) {
         CodeTable codeTable = new CodeTable();
-        // TODO[1]: Implement code-table construction algorithm.
+        // TODO[1]: Implement KRIMP algorithm. (p. 679)
         return codeTable;
     }
 
@@ -71,13 +71,13 @@ class CodeTable {
     }
 
 
+    private final List<CodeTableEntry> entries;
+
     // TODO: Implement java.io.Serializable
     private final class CodeTableEntry {
         ImmutableSet itemset;
         float codeLength;
     }
-
-    private final List<CodeTableEntry> entries;
 
     /**
      * TODO[4]: Documentation.

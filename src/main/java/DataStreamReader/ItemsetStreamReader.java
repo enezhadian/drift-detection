@@ -43,15 +43,67 @@ public class ItemsetStreamReader {
     public ItemsetStreamReader(String path, String delimiterRegex) throws FileNotFoundException {
         reader = new BufferedReader(new InputStreamReader(new FileInputStream(path)));
         delimiter = Pattern.compile(delimiterRegex);
+        head = null;
     }
+
+    /**
+     * Get transactions from data stream starting after last discarded transaction.
+     * @param maxSize Maximum number of of transactions to get.
+     * @return head of data stream with size at most `maxSize`.
+     */
+    public ImmutableList<ImmutableSet> head(int maxSize) {
+        assert(maxSize > 0);
+
+        expandHeadTo(maxSize);
+        return head.subList(0, maxSize <= head.size() ? maxSize : head.size());
+    }
+
+    /**
+     * Discard given number of transactions after last discarded transaction or from the beginning
+     * of data stream.
+     * TODO[4]: Documentation.
+     * @param maxSize
+     * @return
+     */
+    public void discard(int maxSize) {
+        assert(maxSize > 0);
+
+        int headSize = head != null ? head.size() : 0;
+
+        if (maxSize < headSize) {
+            head = new ImmutableList.Builder<ImmutableSet>()
+                    .addAll(head.subList(maxSize, headSize))
+                    .build();
+        } else {
+            head = null;
+            skipLines(maxSize - headSize);
+        }
+    }
+
+
+    private final BufferedReader reader;
+    private final Pattern delimiter;
+    private ImmutableList<ImmutableSet> head;
 
     /**
      * TODO[4]: Documentation.
      * @param maxSize
      * @return
      */
-    public ImmutableList<ImmutableSet> nextBlock(int maxSize) {
-        ImmutableList.Builder<ImmutableSet> batchBuilder = new ImmutableList.Builder<>();
+    private void expandHeadTo(int maxSize) {
+        assert(maxSize > 0);
+
+        if (head != null && head.size() >= maxSize) {
+            // Head is already big enough.
+            return;
+        }
+
+        ImmutableList.Builder<ImmutableSet> headBuilder = new ImmutableList.Builder<>();
+
+        if (head != null) {
+            headBuilder.addAll(head);
+            maxSize -= head.size();
+        }
 
         int size = 0;
         String line;
@@ -64,17 +116,24 @@ public class ItemsetStreamReader {
                     setBuilder.add(item);
                 }
 
-                batchBuilder.add(setBuilder.build());
+                headBuilder.add(setBuilder.build());
             }
         } catch (IOException e) {
-            // Simply continue by returning what already has been read.
+            // Simply continue as there is no more transactions to read.
         }
 
-        return batchBuilder.build();
+        head = headBuilder.build();
     }
 
+    private void skipLines(int maxSize) {
+        assert(maxSize > 0);
 
-    private final BufferedReader reader;
-    private final Pattern delimiter;
+        try {
+            // Skip `maxSize` lines from input file.
+            for (int size = 0; size < maxSize && reader.readLine() != null; size++);
+        } catch (IOException e) {
+            // Simply continue as there is no more transactions to read.
+        }
+    }
 
 }
