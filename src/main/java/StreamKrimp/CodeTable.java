@@ -25,6 +25,8 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 
 
 /**
@@ -40,6 +42,7 @@ class CodeTable {
     public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice, double minSupport) {
         ClosedFrequentSetMiner miner = new ClosedFrequentSetMiner(streamSlice);
 
+        // TODO[1]: All these lists should have the proper order (Increasing in length and support).
         ImmutableList<ImmutableSet> candidateItemsets = miner.nonSingletonClosedFrequentItemsets(
                 minSupport);
 
@@ -53,7 +56,9 @@ class CodeTable {
         double lengthWithItemset;
 
         List<Float> temp;
+        for (int i = itemsets.size() - 1; i >= 0; i++)
         for (ImmutableSet itemset : candidateItemsets) {
+            // TODO[1]: Itemset should be appended in the right place.
             itemsets.add(itemset);
             lengthWithItemset = compressedLengthFor(streamSlice, itemsets, candidateCodeLength);
 
@@ -103,15 +108,58 @@ class CodeTable {
     /**
      * TODO[4]: Documentation.
      * @param streamSlice
-     * @param itemsets
+     * @param itemsets Should be in proper order.
      * @param codeLengths
      * @return
      */
     private static double compressedLengthFor(ImmutableList<ImmutableSet> streamSlice,
                                               List<ImmutableSet> itemsets,
                                               List<Float> codeLengths) {
-        // TODO[1]: Calculate the compressed length of `streamSlice`.
-        return 0;
+        // Calculate the usage of each itemset and store them in `codeLengths`.
+        codeLengths.clear();
+        for (int i = 0; i < itemsets.size(); i++) {
+            codeLengths.add(0f);
+        }
+
+        SetView residue;
+        ImmutableSet itemset;
+        for (ImmutableSet transaction : streamSlice) {
+            // TODO[2]: Find a better way to create a `SetView`.
+            residue = Sets.intersection(transaction, transaction);
+
+            for (int i = 0; i < itemsets.size(); i++) {
+                itemset = itemsets.get(i);
+
+                if (residue.containsAll(itemset)) {
+                    if (itemset.size() == transaction.size()) {
+                        codeLengths.set(i, codeLengths.get(i) + 1);
+                        break;
+                    } else {
+                        // Calculate difference.
+                        residue = Sets.difference(residue, itemset);
+                    }
+                }
+            }
+        }
+
+        // Calculate compressed length of stream slice.
+        double totalUsage = 0;
+        double compressedLength = 0; // Sum of code lengths of covers of transactions.
+        double log2 = Math.log(2);
+        for (float usage : codeLengths) {
+            totalUsage += usage;
+            compressedLength += usage * (-1) * Math.log(usage) / log2;
+        }
+
+        double logTotalUsage = Math.log(totalUsage) / log2;
+        compressedLength += totalUsage * logTotalUsage;
+
+        // Calculate the optimal code length for each itemset.
+        for (int i = 0; i < codeLengths.size(); i++) {
+            codeLengths.set(i, (float) (-Math.log(codeLengths.get(i)) / log2 + logTotalUsage));
+        }
+
+        return compressedLength;
     }
 
     /**
