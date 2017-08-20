@@ -36,8 +36,6 @@ import com.google.common.collect.ImmutableSet;
  */
 public class ItemsetStreamReader {
 
-    // TODO[1]: Singletons should be given to this class.
-
     /**
      * TODO[4]: Documentation.
      * @param path
@@ -49,16 +47,14 @@ public class ItemsetStreamReader {
                                List items) throws FileNotFoundException {
         assert(items.size() > 0);
 
-        itemClass = items.get(0).getClass();
-        reader = new BufferedReader(new InputStreamReader(new FileInputStream(path)));
-        delimiter = Pattern.compile(delimiterRegex);
-        head = null;
+        this.reader = new BufferedReader(new InputStreamReader(new FileInputStream(path)));
+        this.delimiter = Pattern.compile(delimiterRegex);
+        this.head = null;
+        this.items = ImmutableList.builder().addAll(items).build();
+    }
 
-        ImmutableList.Builder builder = ImmutableList.builder();
-        for (Object item : items) {
-            builder.add(ImmutableSet.builder().add(item).build());
-        }
-        singletons = builder.build();
+    public ImmutableList items() {
+        return items;
     }
 
     /**
@@ -95,32 +91,10 @@ public class ItemsetStreamReader {
         }
     }
 
-
-    private final Class itemClass;
     private final BufferedReader reader;
     private final Pattern delimiter;
     private ImmutableList<ImmutableSet> head;
-    private final ImmutableList<ImmutableSet> singletons;
-
-    private Object parse(String itemString) {
-        Object item;
-
-        if (itemClass == Byte.class) {
-            item = Byte.valueOf(itemString);
-        } else if (itemClass == Short.class) {
-            item = Short.valueOf(itemString);
-        } else if (itemClass == Integer.class) {
-            item = Integer.valueOf(itemString);
-        } else if (itemClass == Float.class) {
-            item = Float.valueOf(itemString);
-        } else if (itemClass == Double.class) {
-            item = Double.valueOf(itemString);
-        } else  {
-            item = itemString;
-        }
-
-        return item;
-    }
+    private final ImmutableList items;
 
     /**
      * TODO[4]: Documentation.
@@ -149,8 +123,8 @@ public class ItemsetStreamReader {
                 size++;
                 ImmutableSet.Builder setBuilder = ImmutableSet.builder();
 
-                for (String itemString : delimiter.split(line)) {
-                    setBuilder.add(parse(itemString));
+                for (String item : delimiter.split(line)) {
+                    setBuilder.add(item);
                 }
 
                 headBuilder.add(setBuilder.build());

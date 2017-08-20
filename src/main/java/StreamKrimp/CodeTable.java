@@ -43,12 +43,14 @@ class CodeTable {
      * @param streamSlice
      * @return
      */
-    public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice, double minSupport) {
+    public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice,
+                                       ImmutableList items,
+                                       double minSupport) {
         // These three lists are used as to get results from `findOptimalCodeLengthsFor`.
         List<ImmutableSet> itemsets = new ArrayList<>();
         List<ImmutableSet> candidates = new ArrayList<>();
 
-        findCandidatesFor(streamSlice, minSupport, itemsets, candidates);
+        findCandidatesFor(streamSlice, items, minSupport, itemsets, candidates);
         System.out.println("Found " + itemsets.size() + " Singletons and "+ candidates.size() + " candidates.");
 
         List<Float> codeLengths = new ArrayList<>(candidates.size());
@@ -123,6 +125,7 @@ class CodeTable {
      * @param candidates
      */
     private static void findCandidatesFor(ImmutableList<ImmutableSet> streamSlice,
+                                          ImmutableList items,
                                           double minSupport,
                                           List<ImmutableSet> singletons,
                                           List<ImmutableSet> candidates) {
@@ -132,13 +135,16 @@ class CodeTable {
         session.sparkContext().setLogLevel("OFF");
 
         Map<ImmutableSet, Integer> itemsMap = new HashMap<>();
+        for (Object item : items) {
+            itemsMap.put(ImmutableSet.builder().add(item).build(), 0);
+        }
 
         // Convert Immutable list of sets to list of Spark rows.
         List<Row> data = new ArrayList<>();
         for (ImmutableSet set : streamSlice) {
             for (Object item : set) {
                 ImmutableSet i = ImmutableSet.builder().add(item).build();
-                itemsMap.put(i, itemsMap.getOrDefault(i, 0) + 1);
+                itemsMap.put(i, itemsMap.get(i) + 1);
             }
             data.add(RowFactory.create(set.asList()));
         }
@@ -173,8 +179,8 @@ class CodeTable {
         singletons.clear();
         singletons.addAll(itemsMap.keySet());
         singletons.sort((ImmutableSet x, ImmutableSet y) -> {
-            int xFreq = itemsMap.getOrDefault(x, 0);
-            int yFreq = itemsMap.getOrDefault(y, 0);
+            int xFreq = itemsMap.get(x);
+            int yFreq = itemsMap.get(y);
             return yFreq - xFreq;
         });
 

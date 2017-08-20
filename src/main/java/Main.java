@@ -30,7 +30,6 @@ import DataStreamReader.ItemsetStreamReader;
 import StreamKrimp.DriftDetector;
 
 
-
 public class Main {
 
     public static void main(String[] args) throws Exception {
@@ -41,11 +40,6 @@ public class Main {
 
         ItemsetStreamReader stream = new ItemsetStreamReader(
                 "data/chessBig.txt", "\\s", items);
-
-        ImmutableSet first = stream.head(10).get(0);
-        for (Object item : first) {
-            System.out.println(item.getClass() + " " + item);
-        }
 
         DriftDetector detector = new DriftDetector(stream, 58, 0.1, 0.02, 0.1, 10, 0.01);
 

@@ -109,14 +109,14 @@ public class DriftDetector {
         int sliceSize = blockSize;
 
         convergedHead = stream.head(sliceSize);
-        convergedCodeTable = CodeTable.optimalFor(convergedHead, minSupport);
+        convergedCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minSupport);
 
         CodeTable newCodeTable;
         double ir, len, newLen;
         do {
             sliceSize += blockSize;
             convergedHead = stream.head(sliceSize);
-            newCodeTable = CodeTable.optimalFor(convergedHead, minSupport);
+            newCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minSupport);
 
             len = convergedCodeTable.totalLengthOf(convergedHead);
             newLen = newCodeTable.totalLengthOf(convergedHead);
