@@ -18,22 +18,17 @@
  *
  */
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
 import DataStreamReader.ItemsetStreamReader;
-import StreamKrimp.CodeTable;
+import StreamKrimp.DriftDetector;
 
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
         ItemsetStreamReader stream = new ItemsetStreamReader("data/stream.txt", "\\s");
-        ImmutableList<ImmutableSet> batch = stream.head(1000);
-        CodeTable.findCandidatesFor(batch, 0.1, new ArrayList<>(), new ArrayList<>());
+        DriftDetector detector = new DriftDetector(stream, 80, 0.1, 0.02, 0.1, 10, 0.01);
+
+        detector.run();
     }
 
 }

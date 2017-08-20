@@ -20,10 +20,8 @@
 
 package StreamKrimp;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.lang.reflect.Executable;
+import java.util.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -46,7 +44,6 @@ public class DriftDetector {
     public DriftDetector(ItemsetStreamReader stream, int blockSize, double minSupport,
                          double maxImprovementRate, double minCodeTableDifference,
                          int numSamples, double leaveOut) {
-
         this.stream = stream;
         this.blockSize = blockSize;
         this.minSupport = minSupport;
@@ -67,20 +64,26 @@ public class DriftDetector {
         findCodeTable();
         currentCodeTable = convergedCodeTable;
 
-        while (true) {
-            discardBlocksConformingTo();
+        try {
+            while (true) {
 
-            findCodeTable();
-            double difference = convergedCodeTable.differenceWith(
-                    currentCodeTable, convergedHead);
+                discardBlocksConformingTo();
 
-            if (difference >= minCodeTableDifference) {
-                // TODO[2]: Report concept drift.
-                System.out.println("Concept drift detected.");
-                currentCodeTable = convergedCodeTable;
-            } else {
-                stream.discard(blockSize);
+                findCodeTable();
+                double difference = convergedCodeTable.differenceWith(
+                        currentCodeTable, convergedHead);
+
+                if (difference >= minCodeTableDifference) {
+                    // TODO[2]: Report concept drift.
+                    System.out.println("++++ DRIFT DETECTED (DIFF: "  + difference + ") ++++");
+                    currentCodeTable = convergedCodeTable;
+                } else {
+                    System.out.println("---- NO DRIFT DETECTED (DIFF: "  + difference + ") ----");
+                    stream.discard(blockSize);
+                }
             }
+        } catch (NoSuchElementException e) {
+            System.out.println("Done.");
         }
     }
 
@@ -120,7 +123,7 @@ public class DriftDetector {
             ir = Math.abs(len - newLen) / len;
 
             convergedCodeTable = newCodeTable;
-        } while (ir <= maxImprovementRate);
+        } while (ir > maxImprovementRate);
     }
 
     /**
@@ -131,11 +134,12 @@ public class DriftDetector {
         // Sample head and calculate their encoded length.
         Random random = new Random(System.currentTimeMillis());
 
-        Set<Integer> indexes = new HashSet<>(blockSize);
+        int sampleSize = convergedHead.size() < blockSize ? convergedHead.size() : blockSize;
+        Set<Integer> indexes = new HashSet<>(sampleSize);
         for (int i = 0; i < numSamples; i++) {
             indexes.clear();
-            while (indexes.size() < blockSize) {
-                indexes.add(random.nextInt() % convergedHead.size());
+            while (indexes.size() < sampleSize) {
+                indexes.add(random.nextInt(convergedHead.size()));
             }
 
             ImmutableList.Builder sampleBuilder = new ImmutableList.Builder();
@@ -159,11 +163,18 @@ public class DriftDetector {
         }
 
         // Discard conforming blocks.
+        // TODO[1]: This sometimes calls `skipLines` which should not be the case.
         stream.discard(convergedHead.size());
 
         double blockLength;
+        ImmutableList<ImmutableSet> block;
         while (true) {
-            blockLength = convergedCodeTable.totalLengthOf(stream.head(blockSize));
+            block = stream.head(blockSize);
+            if (block.size() == 0) {
+                break;
+            }
+
+            blockLength = convergedCodeTable.totalLengthOf(block);
             if (minLength <= blockLength && blockLength <= maxLength) {
                 stream.discard(blockSize);
             } else {

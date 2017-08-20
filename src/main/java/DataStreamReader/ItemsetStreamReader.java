@@ -21,6 +21,7 @@
 package DataStreamReader;
 
 import java.io.*;
+import java.util.NoSuchElementException;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
@@ -51,7 +52,7 @@ public class ItemsetStreamReader {
      * @param maxSize Maximum number of of transactions to get.
      * @return head of data stream with size at most `maxSize`.
      */
-    public ImmutableList<ImmutableSet> head(int maxSize) {
+    public ImmutableList<ImmutableSet> head(int maxSize) throws NoSuchElementException {
         assert(maxSize > 0);
 
         expandHeadTo(maxSize);
@@ -90,7 +91,7 @@ public class ItemsetStreamReader {
      * @param maxSize
      * @return
      */
-    private void expandHeadTo(int maxSize) {
+    private void expandHeadTo(int maxSize) throws NoSuchElementException {
         assert(maxSize > 0);
 
         if (head != null && head.size() >= maxSize) {
@@ -123,6 +124,10 @@ public class ItemsetStreamReader {
         }
 
         head = headBuilder.build();
+
+        if (head.size() == 0) {
+            throw new NoSuchElementException();
+        }
     }
 
     private void skipLines(int maxSize) {

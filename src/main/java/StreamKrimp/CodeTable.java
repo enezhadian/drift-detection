@@ -36,7 +36,7 @@ import org.apache.spark.sql.types.*;
 /**
  * TODO[4]: Documentation.
  */
-public class CodeTable {
+class CodeTable {
 
     /**
      * TODO[4]: Documentation.
@@ -98,11 +98,14 @@ public class CodeTable {
      * @return
      */
     public double differenceWith(CodeTable that, ImmutableList<ImmutableSet> streamSlice) {
+        // TODO[1]: Sometimes this is negative. Could it be an issue?
         double thisLen = this.totalLengthOf(streamSlice);
         double thatLen = that.totalLengthOf(streamSlice);
         return (thatLen - thisLen) / thisLen;
     }
 
+
+    private static final double log2 = Math.log(2);
 
     private final ImmutableList<ImmutableSet> itemsets;
     private final ImmutableList<Float> codeLengths;
@@ -114,7 +117,7 @@ public class CodeTable {
      * @param singletons
      * @param candidates
      */
-    public static void findCandidatesFor(ImmutableList<ImmutableSet> streamSlice,
+    private static void findCandidatesFor(ImmutableList<ImmutableSet> streamSlice,
                                           double minSupport,
                                           List<ImmutableSet> singletons,
                                           List<ImmutableSet> candidates) {
@@ -194,6 +197,7 @@ public class CodeTable {
     private static double compressedLengthFor(ImmutableList<ImmutableSet> streamSlice,
                                               List<ImmutableSet> itemsets,
                                               List<Float> codeLengths) {
+        // TODO[2]: Make this method faster.
         // Calculate the usage of each itemset and store them in `codeLengths`.
         codeLengths.clear();
         for (int i = 0; i < itemsets.size(); i++) {
@@ -210,8 +214,9 @@ public class CodeTable {
                 itemset = itemsets.get(i);
 
                 if (residue.containsAll(itemset)) {
+                    codeLengths.set(i, codeLengths.get(i) + 1);
+
                     if (itemset.size() == transaction.size()) {
-                        codeLengths.set(i, codeLengths.get(i) + 1);
                         break;
                     } else {
                         residue = Sets.difference(residue, itemset);
@@ -223,18 +228,23 @@ public class CodeTable {
         // Calculate compressed length of stream slice.
         double totalUsage = 0;
         double compressedLength = 0; // Sum of code lengths of covers of transactions.
-        double log2 = Math.log(2);
         for (float usage : codeLengths) {
-            totalUsage += usage;
-            compressedLength += usage * (-1) * Math.log(usage) / log2;
+            if (usage != 0) {
+                totalUsage += usage;
+                compressedLength += usage * (-1) * Math.log(usage) / log2;
+            }
         }
 
         double logTotalUsage = Math.log(totalUsage) / log2;
         compressedLength += totalUsage * logTotalUsage;
 
         // Calculate the optimal code length for each itemset.
+        double codeLength;
         for (int i = 0; i < codeLengths.size(); i++) {
-            codeLengths.set(i, (float) (-Math.log(codeLengths.get(i)) / log2 + logTotalUsage));
+            codeLength = codeLengths.get(i);
+            if (codeLength != 0) {
+                codeLengths.set(i, (float) (-Math.log(codeLength) / log2 + logTotalUsage));
+            }
         }
 
         return compressedLength;
@@ -253,7 +263,7 @@ public class CodeTable {
      * @return
      */
     private double length() {
-        // TODO: Calculate encoded size of this code table.
+        // TODO[1]: Calculate encoded size of this code table.
         return 0;
     }
 
