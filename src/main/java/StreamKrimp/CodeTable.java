@@ -97,10 +97,10 @@ public class CodeTable {
      * @param streamSlice
      * @return
      */
-    public double differenceWith(CodeTable other, ImmutableList<ImmutableSet> streamSlice) {
-        double l1 = this.totalLengthOf(streamSlice);
-        double l2 = other.totalLengthOf(streamSlice);
-        return (l2 - l1) / l1;
+    public double differenceWith(CodeTable that, ImmutableList<ImmutableSet> streamSlice) {
+        double thisLen = this.totalLengthOf(streamSlice);
+        double thatLen = that.totalLengthOf(streamSlice);
+        return (thatLen - thisLen) / thisLen;
     }
 
 

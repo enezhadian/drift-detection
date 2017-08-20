@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import DataStreamReader.ItemsetStreamReader;
+import org.aopalliance.reflect.Code;
 
 
 public class DriftDetector {
@@ -93,9 +94,29 @@ public class DriftDetector {
      * @return
      */
     private void findCodeTable() {
-        // TODO[1]: Implement FIND CODE TABLE ON STREAM algorithm.
         candidateCodeTable = null;
         headForCandidateCodeTable = null;
+
+        int sliceSize = blockSize;
+        ImmutableList<ImmutableSet> head = stream.head(sliceSize);
+        CodeTable codeTable = CodeTable.optimalFor(head, minSupport);
+        CodeTable newCodeTable;
+
+        double ir, len, newLen;
+        do {
+            sliceSize += blockSize;
+            head = stream.head(sliceSize);
+            newCodeTable = CodeTable.optimalFor(head, minSupport);
+
+            len = codeTable.totalLengthOf(head);
+            newLen = newCodeTable.totalLengthOf(head);
+            ir = Math.abs(len - newLen) / len;
+
+            codeTable = newCodeTable;
+        } while (ir <= maxImprovementRate);
+
+        candidateCodeTable = codeTable;
+        headForCandidateCodeTable = head;
     }
 
     /**
