@@ -18,6 +18,8 @@
  *
  */
 
+import java.util.Arrays;
+
 import DataStreamReader.ItemsetStreamReader;
 import StreamKrimp.DriftDetector;
 
@@ -25,8 +27,8 @@ import StreamKrimp.DriftDetector;
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        ItemsetStreamReader stream = new ItemsetStreamReader("data/stream.txt", "\\s");
-        DriftDetector detector = new DriftDetector(stream, 80, 0.1, 0.02, 0.1, 10, 0.01);
+        ItemsetStreamReader stream = new ItemsetStreamReader("data/chessBig.txt", "\\s");
+        DriftDetector detector = new DriftDetector(stream, 58, 0.1, 0.02, 0.1, 10, 0.01);
 
         detector.run();
     }

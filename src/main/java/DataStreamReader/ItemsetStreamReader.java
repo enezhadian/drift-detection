@@ -21,6 +21,7 @@
 package DataStreamReader;
 
 import java.io.*;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.regex.Pattern;
 
@@ -33,7 +34,9 @@ import com.google.common.collect.ImmutableSet;
 /**
  * TODO[4]: Documentation.
  */
-public class ItemsetStreamReader {
+public class ItemsetStreamReader<ItemType> {
+
+    // TODO[1]: Singletons should be given to this class.
 
     /**
      * TODO[4]: Documentation.
@@ -41,10 +44,19 @@ public class ItemsetStreamReader {
      * @param delimiterRegex
      * @throws FileNotFoundException
      */
-    public ItemsetStreamReader(String path, String delimiterRegex) throws FileNotFoundException {
+    public ItemsetStreamReader(String path,
+                               String delimiterRegex,
+                               List<ItemType> items) throws FileNotFoundException {
+        itemType = (Class<?>) getClass().getTypeParameters()[0].getBounds()[0];
         reader = new BufferedReader(new InputStreamReader(new FileInputStream(path)));
         delimiter = Pattern.compile(delimiterRegex);
         head = null;
+
+        ImmutableList.Builder builder = new ImmutableList.Builder();
+        for (ItemType item : items) {
+            builder.add(new ImmutableSet.Builder().add(item).build());
+        }
+        singletons = builder.build();
     }
 
     /**
@@ -82,9 +94,29 @@ public class ItemsetStreamReader {
     }
 
 
+    private final Class<?> itemType;
     private final BufferedReader reader;
     private final Pattern delimiter;
     private ImmutableList<ImmutableSet> head;
+    private final ImmutableList<ImmutableSet> singletons;
+
+    private ItemType parseItem(String itemString) {
+        ItemType item;
+
+        if (itemType.isAssignableFrom(String.class)) {
+            item = (ItemType) itemString;
+        } else if (itemType.isAssignableFrom(Integer.class)) {
+            item = (ItemType) Integer.valueOf(itemString);
+        } else if (itemType.isAssignableFrom(Boolean.class)) {
+            item = (ItemType) Boolean.valueOf(itemString);
+        } else if (itemType.isAssignableFrom(Double.class)) {
+            item = (ItemType) Double.valueOf(itemString);
+        } else {
+            throw new IllegalArgumentException("Unknown item type.");
+        }
+
+        return item;
+    }
 
     /**
      * TODO[4]: Documentation.
@@ -111,10 +143,10 @@ public class ItemsetStreamReader {
         try {
             while (size < maxSize && (line = reader.readLine()) != null) {
                 size++;
-                ImmutableSet.Builder<String> setBuilder = new ImmutableSet.Builder<>();
+                ImmutableSet.Builder setBuilder = new ImmutableSet.Builder<>();
 
-                for (String item : delimiter.split(line)) {
-                    setBuilder.add(item);
+                for (String itemString : delimiter.split(line)) {
+                    setBuilder.add(parseItem(itemString));
                 }
 
                 headBuilder.add(setBuilder.build());

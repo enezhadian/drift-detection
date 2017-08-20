@@ -44,16 +44,17 @@ class CodeTable {
      * @return
      */
     public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice, double minSupport) {
-        // These three lists are used as to get results from `compressedLengthFor`.
+        // These three lists are used as to get results from `findOptimalCodeLengthsFor`.
         List<ImmutableSet> itemsets = new ArrayList<>();
         List<ImmutableSet> candidates = new ArrayList<>();
 
         findCandidatesFor(streamSlice, minSupport, itemsets, candidates);
+        System.out.println("Found " + itemsets.size() + " Singletons and "+ candidates.size() + " candidates.");
 
         List<Float> codeLengths = new ArrayList<>(candidates.size());
-        List<Float> candidateCodeLength = new ArrayList<>(candidates.size());
+        List<Float> candidateCodeLengths = new ArrayList<>(candidates.size());
 
-        double currentLength = compressedLengthFor(streamSlice, itemsets, codeLengths);
+        double currentLength = findOptimalCodeLengthsFor(streamSlice, itemsets, codeLengths);
         double lengthWithItemset;
 
         List<Float> temp;
@@ -61,16 +62,20 @@ class CodeTable {
         for (ImmutableSet itemset : candidates) {
             // TODO[2]: Use the fastest data structure for frequent insertion and deletion in the middle.
             itemsets.add(insertionIndex, itemset);
-            lengthWithItemset = compressedLengthFor(streamSlice, itemsets, candidateCodeLength);
+            lengthWithItemset = findOptimalCodeLengthsFor(streamSlice,
+                    itemsets, candidateCodeLengths);
 
-            if (lengthWithItemset <= currentLength) {
+            if (lengthWithItemset > currentLength) {
                 // Remove the itemset as it doesn't seem to contribute to the compression.
                 itemsets.remove(insertionIndex);
             } else {
                 // Store code lengths, but also use already allocated space for future computations.
                 temp = codeLengths;
-                codeLengths = candidateCodeLength;
-                candidateCodeLength = temp;
+                codeLengths = candidateCodeLengths;
+                candidateCodeLengths = temp;
+
+                currentLength = lengthWithItemset;
+
                 insertionIndex++;
             }
             // TODO[2]: Add pruning.
@@ -194,9 +199,9 @@ class CodeTable {
      * @param codeLengths
      * @return
      */
-    private static double compressedLengthFor(ImmutableList<ImmutableSet> streamSlice,
-                                              List<ImmutableSet> itemsets,
-                                              List<Float> codeLengths) {
+    private static double findOptimalCodeLengthsFor(ImmutableList<ImmutableSet> streamSlice,
+                                                    List<ImmutableSet> itemsets,
+                                                    List<Float> codeLengths) {
         // TODO[2]: Make this method faster.
         // Calculate the usage of each itemset and store them in `codeLengths`.
         codeLengths.clear();
