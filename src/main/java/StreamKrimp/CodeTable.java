@@ -124,7 +124,7 @@ class CodeTable {
         SetView residue;
         ImmutableSet itemset;
         for (ImmutableSet transaction : streamSlice) {
-            // TODO[2]: Find a better way to create a `SetView`.
+            // TODO[2]: Find a better way to create a `SetView` (Also applies to `coverLengthOf`).
             residue = Sets.intersection(transaction, transaction);
 
             for (int i = 0; i < itemsets.size(); i++) {
@@ -135,7 +135,6 @@ class CodeTable {
                         codeLengths.set(i, codeLengths.get(i) + 1);
                         break;
                     } else {
-                        // Calculate difference.
                         residue = Sets.difference(residue, itemset);
                     }
                 }
@@ -198,8 +197,24 @@ class CodeTable {
      * @return the sum of code lengths for all the itemsets in the cover of given transaction.
      */
     private double coverLengthOf(ImmutableSet transaction) {
-        // TODO[1]: Calculate the cover size of a transaction using this code table.
-        return 0;
+        SetView residue = Sets.intersection(transaction, transaction);
+        ImmutableSet itemset;
+        double coverLength = 0;
+
+        for (int i = 0; i < itemsets.size(); i++) {
+            itemset = itemsets.get(i);
+
+            if (residue.containsAll(itemset)) {
+                coverLength += codeLengths.get(i);
+                if (itemset.size() == transaction.size()) {
+                    break;
+                } else {
+                    residue = Sets.difference(residue, itemset);
+                }
+            }
+        }
+
+        return coverLength;
     }
 
 }
