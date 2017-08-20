@@ -20,19 +20,23 @@
 
 package StreamKrimp;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
+import org.apache.spark.ml.fpm.FPGrowth;
+import org.apache.spark.ml.fpm.FPGrowthModel;
+import org.apache.spark.sql.*;
+import org.apache.spark.sql.types.*;
+
 
 /**
  * TODO[4]: Documentation.
  */
-class CodeTable {
+public class CodeTable {
 
     /**
      * TODO[4]: Documentation.
@@ -40,36 +44,34 @@ class CodeTable {
      * @return
      */
     public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice, double minSupport) {
-        ClosedFrequentSetMiner miner = new ClosedFrequentSetMiner(streamSlice);
-
-        // TODO[1]: All these lists should have the proper order (Increasing in length and support).
-        ImmutableList<ImmutableSet> candidateItemsets = miner.nonSingletonClosedFrequentItemsets(
-                minSupport);
-
         // These three lists are used as to get results from `compressedLengthFor`.
-        List<ImmutableSet> itemsets = new ArrayList<>(miner.singletons());
-        List<Float> codeLengths = new ArrayList<>(candidateItemsets.size());
-        List<Float> candidateCodeLength = new ArrayList<>(candidateItemsets.size());
+        List<ImmutableSet> itemsets = new ArrayList<>();
+        List<ImmutableSet> candidates = new ArrayList<>();
 
+        findCandidatesFor(streamSlice, minSupport, itemsets, candidates);
+
+        List<Float> codeLengths = new ArrayList<>(candidates.size());
+        List<Float> candidateCodeLength = new ArrayList<>(candidates.size());
 
         double currentLength = compressedLengthFor(streamSlice, itemsets, codeLengths);
         double lengthWithItemset;
 
         List<Float> temp;
-        for (int i = itemsets.size() - 1; i >= 0; i++)
-        for (ImmutableSet itemset : candidateItemsets) {
-            // TODO[1]: Itemset should be appended in the right place.
-            itemsets.add(itemset);
+        int insertionIndex = 0;
+        for (ImmutableSet itemset : candidates) {
+            // TODO[2]: Use the fastest data structure for frequent insertion and deletion in the middle.
+            itemsets.add(insertionIndex, itemset);
             lengthWithItemset = compressedLengthFor(streamSlice, itemsets, candidateCodeLength);
 
             if (lengthWithItemset <= currentLength) {
                 // Remove the itemset as it doesn't seem to contribute to the compression.
-                itemsets.remove(itemsets.size() - 1);
+                itemsets.remove(insertionIndex);
             } else {
                 // Store code lengths, but also use already allocated space for future computations.
                 temp = codeLengths;
                 codeLengths = candidateCodeLength;
                 candidateCodeLength = temp;
+                insertionIndex++;
             }
             // TODO[2]: Add pruning.
         }
@@ -104,6 +106,83 @@ class CodeTable {
 
     private final ImmutableList<ImmutableSet> itemsets;
     private final ImmutableList<Float> codeLengths;
+
+    /**
+     * TODO[4]: Documentation.
+     * @param streamSlice
+     * @param minSupport
+     * @param singletons
+     * @param candidates
+     */
+    public static void findCandidatesFor(ImmutableList<ImmutableSet> streamSlice,
+                                          double minSupport,
+                                          List<ImmutableSet> singletons,
+                                          List<ImmutableSet> candidates) {
+        // TODO[2]: Rewrite this method without using Spark.
+        // Create Spark session.
+        SparkSession session = SparkSession.builder().master("local[*]").getOrCreate();
+        session.sparkContext().setLogLevel("OFF");
+
+        Map<ImmutableSet, Integer> itemsMap = new HashMap<>();
+
+        // Convert Immutable list of sets to list of Spark rows.
+        List<Row> data = new ArrayList<>();
+        for (ImmutableSet set : streamSlice) {
+            for (Object item : set) {
+                ImmutableSet<String> i = new ImmutableSet.Builder<String>().add((String) item).build();
+                itemsMap.put(i, itemsMap.getOrDefault(i, 0) + 1);
+            }
+            data.add(RowFactory.create(set.asList()));
+        }
+
+        // Create schema for data frame.
+        StructType schema = new StructType(new StructField[]{ new StructField(
+                "items", new ArrayType(DataTypes.StringType, true), false, Metadata.empty())
+        });
+
+        // Create a data frame for sets of items.
+        Dataset<Row> setsDataFrame = session.createDataFrame(data, schema);
+
+        FPGrowthModel model = new FPGrowth()
+                .setItemsCol("items")
+                .setMinSupport(minSupport)
+                .fit(setsDataFrame);
+
+        List<Row> closedFrequents = model.freqItemsets().collectAsList();
+
+        closedFrequents.sort((Row x, Row y) -> {
+            int xSize = x.getList(0).size();
+            int ySize = y.getList(0).size();
+
+            if (xSize == ySize) {
+                return (int)(y.getLong(1) - x.getLong(1));
+            } else {
+                return ySize - xSize;
+            }
+        });
+
+        // Set singletons.
+        singletons.clear();
+        singletons.addAll(itemsMap.keySet());
+        singletons.sort((ImmutableSet x, ImmutableSet y) -> {
+            int xFreq = itemsMap.getOrDefault(x, 0);
+            int yFreq = itemsMap.getOrDefault(y, 0);
+            return yFreq - xFreq;
+        });
+
+        // Set candidates.
+        candidates.clear();
+        for (Row row : closedFrequents) {
+            if (row.getList(0).size() < 2) {
+                break;
+            }
+            ImmutableSet.Builder<String> setBuilder = new ImmutableSet.Builder<>();
+            for (Object item : row.getList(0)) {
+                setBuilder.add((String) item);
+            }
+            candidates.add(setBuilder.build());
+        }
+    }
 
     /**
      * TODO[4]: Documentation.
