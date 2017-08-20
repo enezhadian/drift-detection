@@ -20,34 +20,41 @@
 
 package StreamKrimp;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import DataStreamReader.ItemsetStreamReader;
-import org.aopalliance.reflect.Code;
 
 
 public class DriftDetector {
 
     /**
-     * TODO[4]: Documentation
+     * TODO[4]: Documentation.
      * @param stream
      * @param blockSize
      * @param minSupport
      * @param maxImprovementRate
      * @param minCodeTableDifference
+     * @param numSamples
      * @param leaveOut
      */
     public DriftDetector(ItemsetStreamReader stream, int blockSize, double minSupport,
                          double maxImprovementRate, double minCodeTableDifference,
-                         double leaveOut) {
+                         int numSamples, double leaveOut) {
 
         this.stream = stream;
         this.blockSize = blockSize;
         this.minSupport = minSupport;
         this.maxImprovementRate = maxImprovementRate;
         this.minCodeTableDifference = minCodeTableDifference;
+        this.numSamples = numSamples;
         this.leaveOut = leaveOut;
+        this.sampleLengths = new double[numSamples];
     }
 
     /**
@@ -58,19 +65,19 @@ public class DriftDetector {
 
         // Create a code table for the first block of data stream.
         findCodeTable();
-        currentCodeTable = candidateCodeTable;
+        currentCodeTable = convergedCodeTable;
 
         while (true) {
-            discardBlocksConformingTo(currentCodeTable);
+            discardBlocksConformingTo();
 
             findCodeTable();
-            double difference = candidateCodeTable.differenceWith(
-                    currentCodeTable, headForCandidateCodeTable);
+            double difference = convergedCodeTable.differenceWith(
+                    currentCodeTable, convergedHead);
 
-            if (minCodeTableDifference <= difference) {
+            if (difference >= minCodeTableDifference) {
                 // TODO[2]: Report concept drift.
                 System.out.println("Concept drift detected.");
-                currentCodeTable = candidateCodeTable;
+                currentCodeTable = convergedCodeTable;
             } else {
                 stream.discard(blockSize);
             }
@@ -83,49 +90,86 @@ public class DriftDetector {
     private final double minSupport;
     private final double maxImprovementRate;
     private final double minCodeTableDifference;
+    private final int numSamples;
     private final double leaveOut;
+    private final double[] sampleLengths;
 
     // Remember last code table and the corresponding head of stream found by `findCodeTable`.
-    private CodeTable candidateCodeTable;
-    private ImmutableList<ImmutableSet> headForCandidateCodeTable;
+    private CodeTable convergedCodeTable;
+    private ImmutableList<ImmutableSet> convergedHead;
 
     /**
      * TODO[4]: Documentation.
      * @return
      */
     private void findCodeTable() {
-        candidateCodeTable = null;
-        headForCandidateCodeTable = null;
-
         int sliceSize = blockSize;
-        ImmutableList<ImmutableSet> head = stream.head(sliceSize);
-        CodeTable codeTable = CodeTable.optimalFor(head, minSupport);
-        CodeTable newCodeTable;
 
+        convergedHead = stream.head(sliceSize);
+        convergedCodeTable = CodeTable.optimalFor(convergedHead, minSupport);
+
+        CodeTable newCodeTable;
         double ir, len, newLen;
         do {
             sliceSize += blockSize;
-            head = stream.head(sliceSize);
-            newCodeTable = CodeTable.optimalFor(head, minSupport);
+            convergedHead = stream.head(sliceSize);
+            newCodeTable = CodeTable.optimalFor(convergedHead, minSupport);
 
-            len = codeTable.totalLengthOf(head);
-            newLen = newCodeTable.totalLengthOf(head);
+            len = convergedCodeTable.totalLengthOf(convergedHead);
+            newLen = newCodeTable.totalLengthOf(convergedHead);
             ir = Math.abs(len - newLen) / len;
 
-            codeTable = newCodeTable;
+            convergedCodeTable = newCodeTable;
         } while (ir <= maxImprovementRate);
-
-        candidateCodeTable = codeTable;
-        headForCandidateCodeTable = head;
     }
 
     /**
      * TODO[4]: Documentation.
-     * @param codeTable
      * @return
      */
-    private void discardBlocksConformingTo(CodeTable codeTable) {
-        // TODO[1]: Find the next batch which does not seem to belong to the given code table.
+    private void discardBlocksConformingTo() {
+        // Sample head and calculate their encoded length.
+        Random random = new Random(System.currentTimeMillis());
+
+        Set<Integer> indexes = new HashSet<>(blockSize);
+        for (int i = 0; i < numSamples; i++) {
+            indexes.clear();
+            while (indexes.size() < blockSize) {
+                indexes.add(random.nextInt() % convergedHead.size());
+            }
+
+            ImmutableList.Builder sampleBuilder = new ImmutableList.Builder();
+            for (int index : indexes) {
+                sampleBuilder.add(convergedHead.get(index));
+            }
+            sampleLengths[i] = convergedCodeTable.totalLengthOf(sampleBuilder.build());
+        }
+
+        // Find minimum and maximum lengths ignoring top and botton `leaveOut` percent of them.
+        Arrays.sort(sampleLengths);
+        int ignoreOnEachSize = (int)(numSamples * leaveOut);
+
+        double minLength = Double.MIN_VALUE, maxLength = Double.MIN_VALUE;
+        for (int i = ignoreOnEachSize; i < numSamples - ignoreOnEachSize; i++) {
+            if (sampleLengths[i] < minLength) {
+                minLength = sampleLengths[i];
+            } else if (sampleLengths[i] > maxLength) {
+                maxLength = sampleLengths[i];
+            }
+        }
+
+        // Discard conforming blocks.
+        stream.discard(convergedHead.size());
+
+        double blockLength;
+        while (true) {
+            blockLength = convergedCodeTable.totalLengthOf(stream.head(blockSize));
+            if (minLength <= blockLength && blockLength <= maxLength) {
+                stream.discard(blockSize);
+            } else {
+                break;
+            }
+        }
     }
 
 }
