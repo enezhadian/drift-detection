@@ -142,7 +142,7 @@ public class DriftDetector {
                 indexes.add(random.nextInt(convergedHead.size()));
             }
 
-            ImmutableList.Builder sampleBuilder = new ImmutableList.Builder();
+            ImmutableList.Builder sampleBuilder = ImmutableList.builder();
             for (int index : indexes) {
                 sampleBuilder.add(convergedHead.get(index));
             }

@@ -82,8 +82,8 @@ class CodeTable {
         }
 
         CodeTable codeTable = new CodeTable(
-                new ImmutableList.Builder<ImmutableSet>().addAll(itemsets).build(),
-                new ImmutableList.Builder<Float>().addAll(codeLengths).build());
+                ImmutableList.<ImmutableSet>builder().addAll(itemsets).build(),
+                ImmutableList.<Float>builder().addAll(codeLengths).build());
         return codeTable;
     }
 
@@ -137,7 +137,7 @@ class CodeTable {
         List<Row> data = new ArrayList<>();
         for (ImmutableSet set : streamSlice) {
             for (Object item : set) {
-                ImmutableSet<String> i = new ImmutableSet.Builder<String>().add((String) item).build();
+                ImmutableSet i = ImmutableSet.builder().add(item).build();
                 itemsMap.put(i, itemsMap.getOrDefault(i, 0) + 1);
             }
             data.add(RowFactory.create(set.asList()));
@@ -184,7 +184,7 @@ class CodeTable {
             if (row.getList(0).size() < 2) {
                 break;
             }
-            ImmutableSet.Builder<String> setBuilder = new ImmutableSet.Builder<>();
+            ImmutableSet.Builder<String> setBuilder = ImmutableSet.builder();
             for (Object item : row.getList(0)) {
                 setBuilder.add((String) item);
             }

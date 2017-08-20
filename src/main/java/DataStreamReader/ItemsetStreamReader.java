@@ -34,7 +34,7 @@ import com.google.common.collect.ImmutableSet;
 /**
  * TODO[4]: Documentation.
  */
-public class ItemsetStreamReader<ItemType> {
+public class ItemsetStreamReader {
 
     // TODO[1]: Singletons should be given to this class.
 
@@ -46,15 +46,17 @@ public class ItemsetStreamReader<ItemType> {
      */
     public ItemsetStreamReader(String path,
                                String delimiterRegex,
-                               List<ItemType> items) throws FileNotFoundException {
-        itemType = (Class<?>) getClass().getTypeParameters()[0].getBounds()[0];
+                               List items) throws FileNotFoundException {
+        assert(items.size() > 0);
+
+        itemClass = items.get(0).getClass();
         reader = new BufferedReader(new InputStreamReader(new FileInputStream(path)));
         delimiter = Pattern.compile(delimiterRegex);
         head = null;
 
-        ImmutableList.Builder builder = new ImmutableList.Builder();
-        for (ItemType item : items) {
-            builder.add(new ImmutableSet.Builder().add(item).build());
+        ImmutableList.Builder builder = ImmutableList.builder();
+        for (Object item : items) {
+            builder.add(ImmutableSet.builder().add(item).build());
         }
         singletons = builder.build();
     }
@@ -84,7 +86,7 @@ public class ItemsetStreamReader<ItemType> {
         int headSize = head != null ? head.size() : 0;
 
         if (maxSize < headSize) {
-            head = new ImmutableList.Builder<ImmutableSet>()
+            head = ImmutableList.<ImmutableSet>builder()
                     .addAll(head.subList(maxSize, headSize))
                     .build();
         } else {
@@ -94,25 +96,27 @@ public class ItemsetStreamReader<ItemType> {
     }
 
 
-    private final Class<?> itemType;
+    private final Class itemClass;
     private final BufferedReader reader;
     private final Pattern delimiter;
     private ImmutableList<ImmutableSet> head;
     private final ImmutableList<ImmutableSet> singletons;
 
-    private ItemType parseItem(String itemString) {
-        ItemType item;
+    private Object parse(String itemString) {
+        Object item;
 
-        if (itemType.isAssignableFrom(String.class)) {
-            item = (ItemType) itemString;
-        } else if (itemType.isAssignableFrom(Integer.class)) {
-            item = (ItemType) Integer.valueOf(itemString);
-        } else if (itemType.isAssignableFrom(Boolean.class)) {
-            item = (ItemType) Boolean.valueOf(itemString);
-        } else if (itemType.isAssignableFrom(Double.class)) {
-            item = (ItemType) Double.valueOf(itemString);
-        } else {
-            throw new IllegalArgumentException("Unknown item type.");
+        if (itemClass == Byte.class) {
+            item = Byte.valueOf(itemString);
+        } else if (itemClass == Short.class) {
+            item = Short.valueOf(itemString);
+        } else if (itemClass == Integer.class) {
+            item = Integer.valueOf(itemString);
+        } else if (itemClass == Float.class) {
+            item = Float.valueOf(itemString);
+        } else if (itemClass == Double.class) {
+            item = Double.valueOf(itemString);
+        } else  {
+            item = itemString;
         }
 
         return item;
@@ -131,7 +135,7 @@ public class ItemsetStreamReader<ItemType> {
             return;
         }
 
-        ImmutableList.Builder<ImmutableSet> headBuilder = new ImmutableList.Builder<>();
+        ImmutableList.Builder<ImmutableSet> headBuilder = ImmutableList.builder();
 
         if (head != null) {
             headBuilder.addAll(head);
@@ -143,10 +147,10 @@ public class ItemsetStreamReader<ItemType> {
         try {
             while (size < maxSize && (line = reader.readLine()) != null) {
                 size++;
-                ImmutableSet.Builder setBuilder = new ImmutableSet.Builder<>();
+                ImmutableSet.Builder setBuilder = ImmutableSet.builder();
 
                 for (String itemString : delimiter.split(line)) {
-                    setBuilder.add(parseItem(itemString));
+                    setBuilder.add(parse(itemString));
                 }
 
                 headBuilder.add(setBuilder.build());
