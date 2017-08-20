@@ -19,12 +19,7 @@
  */
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
-import com.google.common.collect.ImmutableRangeSet;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Range;
 
 import DataStreamReader.ItemsetStreamReader;
 import StreamKrimp.DriftDetector;
@@ -33,17 +28,28 @@ import StreamKrimp.DriftDetector;
 public class Main {
 
     public static void main(String[] args) throws Exception {
+        int numItems = 102;
+        int blockSize = numItems;
+        double minSupport = 0.1;
+        double maxImprovementRate = 0.02;
+        double minCodeTableDifference = 0.1;
+        int numSamples = 100;
+        double leaveOut = 0.01;
+
         List<String> items = new ArrayList<>();
-        for (int i = 0; i < 58; i++) {
+        for (int i = 0; i < numItems; i++) {
             items.add(Integer.toString(i));
         }
 
         ItemsetStreamReader stream = new ItemsetStreamReader(
-                "data/chessBig.txt", "\\s", items);
+                "data/letrecog.txt", "\\s", items);
 
-        DriftDetector detector = new DriftDetector(stream, 58, 0.1, 0.02, 0.1, 10, 0.01);
+        DriftDetector detector = new DriftDetector(stream, numItems, minSupport,
+                maxImprovementRate,minCodeTableDifference, numSamples, leaveOut);
 
         detector.run();
+
+        System.out.println("Processed " + stream.read + " transactions.");
     }
 
 }

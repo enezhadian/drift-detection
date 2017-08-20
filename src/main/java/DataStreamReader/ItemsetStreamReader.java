@@ -96,6 +96,8 @@ public class ItemsetStreamReader {
     private ImmutableList<ImmutableSet> head;
     private final ImmutableList items;
 
+    public int read = 0;
+
     /**
      * TODO[4]: Documentation.
      * @param maxSize
@@ -120,6 +122,8 @@ public class ItemsetStreamReader {
         String line;
         try {
             while (size < maxSize && (line = reader.readLine()) != null) {
+                read++;
+
                 size++;
                 ImmutableSet.Builder setBuilder = ImmutableSet.builder();
 
@@ -145,7 +149,7 @@ public class ItemsetStreamReader {
 
         try {
             // Skip `maxSize` lines from input file.
-            for (int size = 0; size < maxSize && reader.readLine() != null; size++);
+            for (int size = 0; size < maxSize && reader.readLine() != null; size++) { read++; }
         } catch (IOException e) {
             // Simply continue as there is no more transactions to read.
         }
