@@ -16,5 +16,8 @@ gradle-app.setting
 # Do not include data files in the repository.
 /data/
 
+# Temporary files.
+/tmp/
+
 # Include dependencies.
 !libs/*.jar

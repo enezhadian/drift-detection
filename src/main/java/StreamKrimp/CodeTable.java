@@ -130,26 +130,21 @@ class CodeTable {
                                           double minSupport,
                                           List<ImmutableSet> singletons,
                                           List<ImmutableSet> candidates) {
+        String input = "tmp/input";
+        String output = "tmp/output";
         try {
-            Files.delete(Paths.get("tempinfile"));
-            Files.delete(Paths.get("tempoutfile"));
-        } catch (Exception e) {
-            // Do nothing.
-        }
-
-        try {
-            PrintWriter writer = new PrintWriter("tempinfile", "UTF-8");
+            PrintWriter writer = new PrintWriter(input, "UTF-8");
             for (ImmutableSet transaction : streamSlice) {
                 writer.println(String.join(" ", transaction.asList()));
             }
             writer.close();
 
             AlgoAprioriClose apriori = new AlgoAprioriClose();
-            apriori.runAlgorithm(minSupport, "tempinfile", "tempoutfile");
+            apriori.runAlgorithm(minSupport, input, output);
 
             candidates.clear();
             BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    new FileInputStream("tempoutfile")));
+                    new FileInputStream(output)));
             String line;
             String[] parts, is;
             Map<ImmutableSet, Integer> candidatesMap = new HashMap();
