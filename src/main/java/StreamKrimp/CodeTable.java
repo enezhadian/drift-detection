@@ -60,7 +60,7 @@ class CodeTable {
         List<ImmutableSet> itemsets = new ArrayList<>();
         List<ImmutableSet> candidates = new ArrayList<>();
 
-        findCandidatesFor2(streamSlice, items, minSupport, itemsets, candidates);
+        findCandidatesFor(streamSlice, items, minSupport, itemsets, candidates);
         System.out.println("Found " + itemsets.size() + " Singletons and "+ candidates.size() + " candidates.");
 
         List<Float> codeLengths = new ArrayList<>(candidates.size());
@@ -139,87 +139,6 @@ class CodeTable {
                                           double minSupport,
                                           List<ImmutableSet> singletons,
                                           List<ImmutableSet> candidates) {
-        // TODO[2]: Rewrite this method without using Spark.
-        // Create Spark session.
-        SparkSession session = SparkSession.builder().master("local[*]").getOrCreate();
-        session.sparkContext().setLogLevel("OFF");
-
-        Map<ImmutableSet, Integer> itemsMap = new HashMap<>();
-        for (Object item : items) {
-            itemsMap.put(ImmutableSet.builder().add(item).build(), 0);
-        }
-
-        // Convert Immutable list of sets to list of Spark rows.
-        List<Row> data = new ArrayList<>();
-        for (ImmutableSet set : streamSlice) {
-            for (Object item : set) {
-                ImmutableSet i = ImmutableSet.builder().add(item).build();
-                itemsMap.put(i, itemsMap.get(i) + 1);
-            }
-            data.add(RowFactory.create(set.asList()));
-        }
-
-        // Create schema for data frame.
-        StructType schema = new StructType(new StructField[]{ new StructField(
-                "items", new ArrayType(DataTypes.StringType, true), false, Metadata.empty())
-        });
-
-        // Create a data frame for sets of items.
-        Dataset<Row> setsDataFrame = session.createDataFrame(data, schema);
-
-        FPGrowthModel model = new FPGrowth()
-                .setItemsCol("items")
-                .setMinSupport(minSupport)
-                .fit(setsDataFrame);
-
-        List<Row> closedFrequents = model.freqItemsets().collectAsList();
-
-        closedFrequents.sort((Row x, Row y) -> {
-            int xSize = x.getList(0).size();
-            int ySize = y.getList(0).size();
-
-            if (xSize == ySize) {
-                return (int)(y.getLong(1) - x.getLong(1));
-            } else {
-                return ySize - xSize;
-            }
-        });
-
-        // Set singletons.
-        singletons.clear();
-        singletons.addAll(itemsMap.keySet());
-        singletons.sort((ImmutableSet x, ImmutableSet y) -> {
-            int xFreq = itemsMap.get(x);
-            int yFreq = itemsMap.get(y);
-            return yFreq - xFreq;
-        });
-
-        // Set candidates.
-        candidates.clear();
-        for (Row row : closedFrequents) {
-            if (row.getList(0).size() < 2) {
-                break;
-            }
-            ImmutableSet.Builder<String> setBuilder = ImmutableSet.builder();
-            for (Object item : row.getList(0)) {
-                setBuilder.add((String) item);
-            }
-            candidates.add(setBuilder.build());
-        }
-    }
-
-    /**
-     * TODO[4]: Documentation.
-     * @param streamSlice
-     * @param minSupport
-     * @param singletons
-     * @param candidates
-     */
-    private static void findCandidatesFor2(ImmutableList<ImmutableSet> streamSlice,
-                                           ImmutableList items,
-                                           double minSupport,
-                                           List<ImmutableSet> singletons,
-                                           List<ImmutableSet> candidates) {
         try {
             Files.delete(Paths.get("tempinfile"));
             Files.delete(Paths.get("tempoutfile"));
