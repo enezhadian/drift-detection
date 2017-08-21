@@ -31,6 +31,7 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
 import ca.pfv.spmf.algorithms.frequentpatterns.apriori_close.AlgoAprioriClose;
+import com.sun.tools.javac.jvm.Code;
 
 
 /**
@@ -49,15 +50,19 @@ class CodeTable {
         // These three lists are used as to get results from `findOptimalCodeLengthsFor`.
         List<ImmutableSet> itemsets = new ArrayList<>();
         List<ImmutableSet> candidates = new ArrayList<>();
+        List<ImmutableSet> singletons = new ArrayList<>();
 
-        findCandidatesFor(streamSlice, items, minSupport, itemsets, candidates);
-        System.out.println("Found " + itemsets.size() + " Singletons and "
+        findCandidatesFor(streamSlice, items, minSupport, singletons, candidates);
+        System.out.println("Found " + singletons.size() + " Singletons and "
                 + candidates.size() + " candidates.");
 
+        itemsets.addAll(singletons);
         List<Float> codeLengths = new ArrayList<>(candidates.size());
         List<Float> candidateCodeLengths = new ArrayList<>(candidates.size());
 
         double currentLength = findOptimalCodeLengthsFor(streamSlice, itemsets, codeLengths);
+        CodeTable standardCodeTable = new CodeTable(itemsets, codeLengths, 0);
+
         double lengthWithItemset;
 
         List<Float> temp;
@@ -84,9 +89,14 @@ class CodeTable {
             // TODO[2]: Add pruning.
         }
 
-        CodeTable codeTable = new CodeTable(
-                ImmutableList.<ImmutableSet>builder().addAll(itemsets).build(),
-                ImmutableList.<Float>builder().addAll(codeLengths).build());
+        // TODO[1]: Calculate encoded size of code table.
+        ImmutableList<ImmutableSet> codeTableItemsets = ImmutableList.<ImmutableSet>builder()
+                .addAll(itemsets).build();
+        ImmutableList<Float> codeTableCodeLengths = ImmutableList.<Float>builder()
+                .addAll(codeLengths).build();
+        double length = findOptimalCodeLengthsFor(codeTableItemsets, singletons, null);
+
+        CodeTable codeTable = new CodeTable(codeTableItemsets, codeTableCodeLengths, length);
         return codeTable;
     }
 
@@ -117,6 +127,7 @@ class CodeTable {
 
     private final ImmutableList<ImmutableSet> itemsets;
     private final ImmutableList<Float> codeLengths;
+    private final double length;
 
     /**
      * TODO[4]: Documentation.
@@ -194,6 +205,10 @@ class CodeTable {
                                                     List<Float> codeLengths) {
         // TODO[2]: Make this method faster.
         // Calculate the usage of each itemset and store them in `codeLengths`.
+        if (codeLengths == null) {
+            codeLengths = new ArrayList<>(itemsets.size());
+        }
+
         codeLengths.clear();
         for (int i = 0; i < itemsets.size(); i++) {
             codeLengths.add(0f);
@@ -248,9 +263,12 @@ class CodeTable {
     /**
      * TODO[4]: Documentation.
      */
-    private CodeTable(ImmutableList<ImmutableSet> itemsets, ImmutableList<Float> codeLengths) {
+    private CodeTable(ImmutableList<ImmutableSet> itemsets,
+                      ImmutableList<Float> codeLengths,
+                      double length) {
         this.itemsets = itemsets;
         this.codeLengths = codeLengths;
+        this.length = length;
     }
 
     /**
@@ -258,8 +276,7 @@ class CodeTable {
      * @return
      */
     private double length() {
-        // TODO[1]: Calculate encoded size of this code table.
-        return 0;
+        return length;
     }
 
     /**
