@@ -51,7 +51,8 @@ class CodeTable {
         List<ImmutableSet> candidates = new ArrayList<>();
 
         findCandidatesFor(streamSlice, items, minSupport, itemsets, candidates);
-        System.out.println("Found " + itemsets.size() + " Singletons and "+ candidates.size() + " candidates.");
+        System.out.println("Found " + itemsets.size() + " Singletons and "
+                + candidates.size() + " candidates.");
 
         List<Float> codeLengths = new ArrayList<>(candidates.size());
         List<Float> candidateCodeLengths = new ArrayList<>(candidates.size());
@@ -132,7 +133,11 @@ class CodeTable {
         try {
             Files.delete(Paths.get("tempinfile"));
             Files.delete(Paths.get("tempoutfile"));
+        } catch (Exception e) {
+            // Do nothing.
+        }
 
+        try {
             PrintWriter writer = new PrintWriter("tempinfile", "UTF-8");
             for (ImmutableSet transaction : streamSlice) {
                 writer.println(String.join(" ", transaction.asList()));
@@ -143,13 +148,14 @@ class CodeTable {
             apriori.runAlgorithm(minSupport, "tempinfile", "tempoutfile");
 
             candidates.clear();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("tempoutfile")));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new FileInputStream("tempoutfile")));
             String line;
             String[] parts, is;
             Map<ImmutableSet, Integer> candidatesMap = new HashMap();
             while ((line = reader.readLine()) != null) {
-                parts = line.split("\\s*#SUP:\\s*");
-                is = parts[0].split("\\s*");
+                parts = line.split("\\s+#SUP:\\s+");
+                is = parts[0].split("\\s+");
 
                 if (is.length > 1) {
                     ImmutableSet.Builder setBuilder = ImmutableSet.builder();
@@ -161,9 +167,15 @@ class CodeTable {
             }
             candidates.addAll(candidatesMap.keySet());
             candidates.sort((ImmutableSet x, ImmutableSet y) -> {
-                int xFreq = candidatesMap.get(x);
-                int yFreq = candidatesMap.get(y);
-                return yFreq - xFreq;
+                int xSize = x.size();
+                int ySize = y.size();
+                if (xSize == ySize) {
+                    int xFreq = candidatesMap.get(x);
+                    int yFreq = candidatesMap.get(y);
+                    return yFreq - xFreq;
+                } else {
+                    return ySize - xSize;
+                }
             });
 
             singletons.clear();
@@ -204,7 +216,7 @@ class CodeTable {
                 if (residue.containsAll(itemset)) {
                     codeLengths.set(i, codeLengths.get(i) + 1);
 
-                    if (itemset.size() == transaction.size()) {
+                    if (itemset.size() == residue.size()) {
                         break;
                     } else {
                         residue = Sets.difference(residue, itemset);
@@ -263,7 +275,7 @@ class CodeTable {
     private double lengthOf(ImmutableList<ImmutableSet> streamSlice) {
         double totalCoverLength = 0;
         for (ImmutableSet transaction : streamSlice) {
-            totalCoverLength = coverLengthOf(transaction);
+            totalCoverLength += coverLengthOf(transaction);
         }
         return totalCoverLength;
     }
@@ -283,7 +295,7 @@ class CodeTable {
 
             if (residue.containsAll(itemset)) {
                 coverLength += codeLengths.get(i);
-                if (itemset.size() == transaction.size()) {
+                if (itemset.size() == residue.size()) {
                     break;
                 } else {
                     residue = Sets.difference(residue, itemset);

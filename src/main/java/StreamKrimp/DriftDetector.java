@@ -42,7 +42,12 @@ public class DriftDetector {
      */
     public DriftDetector(ItemsetStreamReader stream, int blockSize, double minSupport,
                          double maxImprovementRate, double minCodeTableDifference,
-                         int numSamples, double leaveOut) {
+                         int numSamples, double leaveOut) throws IllegalArgumentException {
+
+        if (2 * (int)(leaveOut * numSamples) > numSamples) {
+            throw new IllegalArgumentException();
+        }
+
         this.stream = stream;
         this.blockSize = blockSize;
         this.minSupport = minSupport;
@@ -63,9 +68,10 @@ public class DriftDetector {
         findCodeTable();
         currentCodeTable = convergedCodeTable;
 
+        boolean doSample = true;
         try {
             while (true) {
-                discardBlocksConformingTo();
+                discardBlocksConformingTo(doSample);
 
                 findCodeTable();
                 double difference = convergedCodeTable.differenceWith(
@@ -75,9 +81,12 @@ public class DriftDetector {
                     // TODO[2]: Report concept drift.
                     System.out.println("++++ DRIFT DETECTED (DIFF: "  + difference + ") ++++");
                     currentCodeTable = convergedCodeTable;
+                    stream.discard(convergedHead.size());
+                    doSample = true;
                 } else {
                     System.out.println("---- NO DRIFT DETECTED (DIFF: "  + difference + ") ----");
                     stream.discard(blockSize);
+                    doSample = false;
                 }
             }
         } catch (NoSuchElementException e) {
@@ -128,42 +137,35 @@ public class DriftDetector {
      * TODO[4]: Documentation.
      * @return
      */
-    private void discardBlocksConformingTo() {
+    private void discardBlocksConformingTo(boolean doSample) {
         // Sample head and calculate their encoded length.
-        Random random = new Random(System.currentTimeMillis());
+        if (doSample) {
+            Random random = new Random(System.currentTimeMillis());
 
-        int sampleSize = convergedHead.size() < blockSize ? convergedHead.size() : blockSize;
-        Set<Integer> indexes = new HashSet<>(sampleSize);
-        for (int i = 0; i < numSamples; i++) {
-            indexes.clear();
-            while (indexes.size() < sampleSize) {
-                indexes.add(random.nextInt(convergedHead.size()));
+            int sampleSize = convergedHead.size() < blockSize ? convergedHead.size() : blockSize;
+            Set<Integer> indexes = new HashSet<>(sampleSize);
+            for (int i = 0; i < numSamples; i++) {
+                indexes.clear();
+                while (indexes.size() < sampleSize) {
+                    indexes.add(random.nextInt(convergedHead.size()));
+                }
+
+                ImmutableList.Builder sampleBuilder = ImmutableList.builder();
+                for (int index : indexes) {
+                    sampleBuilder.add(convergedHead.get(index));
+                }
+                sampleLengths[i] = convergedCodeTable.totalLengthOf(sampleBuilder.build());
             }
 
-            ImmutableList.Builder sampleBuilder = ImmutableList.builder();
-            for (int index : indexes) {
-                sampleBuilder.add(convergedHead.get(index));
-            }
-            sampleLengths[i] = convergedCodeTable.totalLengthOf(sampleBuilder.build());
+            Arrays.sort(sampleLengths);
         }
 
         // Find minimum and maximum lengths ignoring top and botton `leaveOut` percent of them.
-        Arrays.sort(sampleLengths);
         int ignoreOnEachSize = (int)(numSamples * leaveOut);
-
-        double minLength = Double.MIN_VALUE, maxLength = Double.MIN_VALUE;
-        for (int i = ignoreOnEachSize; i < numSamples - ignoreOnEachSize; i++) {
-            if (sampleLengths[i] < minLength) {
-                minLength = sampleLengths[i];
-            } else if (sampleLengths[i] > maxLength) {
-                maxLength = sampleLengths[i];
-            }
-        }
+        double minLength = sampleLengths[ignoreOnEachSize];
+        double maxLength = sampleLengths[numSamples - ignoreOnEachSize - 1];
 
         // Discard conforming blocks.
-        // TODO[1]: This sometimes calls `skipLines` which should not be the case.
-        stream.discard(convergedHead.size());
-
         double blockLength;
         ImmutableList<ImmutableSet> block;
         while (true) {

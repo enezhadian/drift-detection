@@ -30,7 +30,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         int numItems = 102;
         int blockSize = numItems;
-        double minSupport = 0.1;
+        double minSupport = 0.3;
         double maxImprovementRate = 0.02;
         double minCodeTableDifference = 0.1;
         int numSamples = 100;

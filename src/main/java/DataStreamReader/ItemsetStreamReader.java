@@ -45,8 +45,6 @@ public class ItemsetStreamReader {
     public ItemsetStreamReader(String path,
                                String delimiterRegex,
                                List items) throws FileNotFoundException {
-        assert(items.size() > 0);
-
         this.reader = new BufferedReader(new InputStreamReader(new FileInputStream(path)));
         this.delimiter = Pattern.compile(delimiterRegex);
         this.head = null;
@@ -63,8 +61,6 @@ public class ItemsetStreamReader {
      * @return head of data stream with size at most `maxSize`.
      */
     public ImmutableList<ImmutableSet> head(int maxSize) throws NoSuchElementException {
-        assert(maxSize > 0);
-
         expandHeadTo(maxSize);
         return head.subList(0, maxSize <= head.size() ? maxSize : head.size());
     }
@@ -77,9 +73,8 @@ public class ItemsetStreamReader {
      * @return
      */
     public void discard(int maxSize) {
-        assert(maxSize > 0);
-
         int headSize = head != null ? head.size() : 0;
+        int skipSize;
 
         if (maxSize < headSize) {
             head = ImmutableList.<ImmutableSet>builder()
@@ -87,7 +82,10 @@ public class ItemsetStreamReader {
                     .build();
         } else {
             head = null;
-            skipLines(maxSize - headSize);
+            skipSize = maxSize - headSize;
+            if (skipSize > 0) {
+                skipLines(skipSize);
+            }
         }
     }
 
@@ -104,8 +102,6 @@ public class ItemsetStreamReader {
      * @return
      */
     private void expandHeadTo(int maxSize) throws NoSuchElementException {
-        assert(maxSize > 0);
-
         if (head != null && head.size() >= maxSize) {
             // Head is already big enough.
             return;
@@ -145,8 +141,7 @@ public class ItemsetStreamReader {
     }
 
     private void skipLines(int maxSize) {
-        assert(maxSize > 0);
-
+        System.out.println("Doing something which is not supposed to happen.");
         try {
             // Skip `maxSize` lines from input file.
             for (int size = 0; size < maxSize && reader.readLine() != null; size++) { read++; }
