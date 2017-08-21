@@ -24,23 +24,13 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.regex.Pattern;
 
-import DataStreamReader.ItemsetStreamReader;
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
-import org.apache.commons.collections.map.HashedMap;
-import org.apache.spark.ml.fpm.FPGrowth;
-import org.apache.spark.ml.fpm.FPGrowthModel;
-import org.apache.spark.sql.*;
-import org.apache.spark.sql.types.*;
-
 import ca.pfv.spmf.algorithms.frequentpatterns.apriori_close.AlgoAprioriClose;
-import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 
 /**
