@@ -20,17 +20,27 @@
 
 package StreamKrimp;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 
+import DataStreamReader.ItemsetStreamReader;
+import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
+import org.apache.commons.collections.map.HashedMap;
 import org.apache.spark.ml.fpm.FPGrowth;
 import org.apache.spark.ml.fpm.FPGrowthModel;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.types.*;
+
+import ca.pfv.spmf.algorithms.frequentpatterns.apriori_close.AlgoAprioriClose;
+import ca.pfv.spmf.patterns.itemset_array_integers_with_count.Itemsets;
 
 
 /**
@@ -50,7 +60,7 @@ class CodeTable {
         List<ImmutableSet> itemsets = new ArrayList<>();
         List<ImmutableSet> candidates = new ArrayList<>();
 
-        findCandidatesFor(streamSlice, items, minSupport, itemsets, candidates);
+        findCandidatesFor2(streamSlice, items, minSupport, itemsets, candidates);
         System.out.println("Found " + itemsets.size() + " Singletons and "+ candidates.size() + " candidates.");
 
         List<Float> codeLengths = new ArrayList<>(candidates.size());
@@ -195,6 +205,64 @@ class CodeTable {
                 setBuilder.add((String) item);
             }
             candidates.add(setBuilder.build());
+        }
+    }
+
+    /**
+     * TODO[4]: Documentation.
+     * @param streamSlice
+     * @param minSupport
+     * @param singletons
+     * @param candidates
+     */
+    private static void findCandidatesFor2(ImmutableList<ImmutableSet> streamSlice,
+                                           ImmutableList items,
+                                           double minSupport,
+                                           List<ImmutableSet> singletons,
+                                           List<ImmutableSet> candidates) {
+        try {
+            Files.delete(Paths.get("tempinfile"));
+            Files.delete(Paths.get("tempoutfile"));
+
+            PrintWriter writer = new PrintWriter("tempinfile", "UTF-8");
+            for (ImmutableSet transaction : streamSlice) {
+                writer.println(String.join(" ", transaction.asList()));
+            }
+            writer.close();
+
+            AlgoAprioriClose apriori = new AlgoAprioriClose();
+            apriori.runAlgorithm(minSupport, "tempinfile", "tempoutfile");
+
+            candidates.clear();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("tempoutfile")));
+            String line;
+            String[] parts, is;
+            Map<ImmutableSet, Integer> candidatesMap = new HashMap();
+            while ((line = reader.readLine()) != null) {
+                parts = line.split("\\s*#SUP:\\s*");
+                is = parts[0].split("\\s*");
+
+                if (is.length > 1) {
+                    ImmutableSet.Builder setBuilder = ImmutableSet.builder();
+                    for (Object item : is) {
+                        setBuilder.add(item);
+                    }
+                    candidatesMap.put(setBuilder.build(), Integer.parseInt(parts[1]));
+                }
+            }
+            candidates.addAll(candidatesMap.keySet());
+            candidates.sort((ImmutableSet x, ImmutableSet y) -> {
+                int xFreq = candidatesMap.get(x);
+                int yFreq = candidatesMap.get(y);
+                return yFreq - xFreq;
+            });
+
+            singletons.clear();
+            for (Object item : items) {
+                singletons.add(ImmutableSet.builder().add(item).build());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

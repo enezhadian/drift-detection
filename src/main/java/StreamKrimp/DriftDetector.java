@@ -66,7 +66,6 @@ public class DriftDetector {
 
         try {
             while (true) {
-
                 discardBlocksConformingTo();
 
                 findCodeTable();
@@ -176,6 +175,7 @@ public class DriftDetector {
 
             blockLength = convergedCodeTable.totalLengthOf(block);
             if (minLength <= blockLength && blockLength <= maxLength) {
+                System.out.println("Skipping a block.");
                 stream.discard(blockSize);
             } else {
                 break;

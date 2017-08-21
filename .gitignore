@@ -15,3 +15,6 @@ gradle-app.setting
 
 # Do not include data files in the repository.
 /data/
+
+# Include dependencies.
+!libs/*.jar
