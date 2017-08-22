@@ -35,13 +35,13 @@ public class CodeTable {
 
     public static CodeTable optimalFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                        List<String> items,
-                                       double minSupport) {
+                                       int minFrequency) {
         // These three lists are used as to get results from `findOptimalCodeLengthsFor`.
         List<ImmutableSet<String>> itemsets = new ArrayList<>();
         List<ImmutableSet<String>> candidates = new ArrayList<>();
         List<ImmutableSet<String>> singletons = new ArrayList<>();
 
-        findCandidatesFor(streamSlice, items, minSupport, singletons, candidates);
+        findCandidatesFor(streamSlice, items, minFrequency, singletons, candidates);
         System.out.println("Found " + singletons.size() + " Singletons and "
                 + candidates.size() + " candidates.");
 
@@ -50,10 +50,10 @@ public class CodeTable {
         List<Float> candidateCodeLengths = new ArrayList<>(candidates.size());
 
         double currentLength = findOptimalCodeLengthsFor(streamSlice, itemsets, codeLengths);
-        // CodeTable standardCodeTable = new CodeTable(
-        //         ImmutableList.<ImmutableSet<String>>builder().addAll(itemsets).build(),
-        //         ImmutableList.<Float>builder().addAll(codeLengths).build(),
-        //         0);
+        CodeTable standardCodeTable = new CodeTable(
+                ImmutableList.<ImmutableSet<String>>builder().addAll(itemsets).build(),
+                ImmutableList.<Float>builder().addAll(codeLengths).build(),
+                0);
 
         double lengthWithItemset;
 
@@ -97,10 +97,10 @@ public class CodeTable {
         ImmutableList<Float> codeTableCodeLengths =
                 ImmutableList.<Float>builder().addAll(codeLengths).build();
         double length = 0;
-        // for (int i =0; i < codeTableItemsets.size(); i++) {
-        //     length += standardCodeTable.coverLengthOf(codeTableItemsets.get(i));
-        //     length += codeTableCodeLengths.get(i);
-        // }
+        for (int i =0; i < codeTableItemsets.size(); i++) {
+            length += standardCodeTable.coverLengthOf(codeTableItemsets.get(i));
+            length += codeTableCodeLengths.get(i);
+        }
 
         System.out.println("Minimum length: " + currentLength);
         CodeTable codeTable = new CodeTable(codeTableItemsets, codeTableCodeLengths, length);
@@ -127,7 +127,7 @@ public class CodeTable {
 
     private static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                           List<String> items,
-                                          double minSupport,
+                                          int minFrequency,
                                           List<ImmutableSet<String>> singletons,
                                           List<ImmutableSet<String>> candidates) {
         String input = "tmp/input";
@@ -140,7 +140,8 @@ public class CodeTable {
             writer.close();
 
             AlgoAprioriClose apriori = new AlgoAprioriClose();
-            apriori.runAlgorithm(minSupport, input, output);
+            double minSupportPercentage = 100.0 * minFrequency / streamSlice.size();
+            apriori.runAlgorithm(minSupportPercentage, input, output);
 
             candidates.clear();
             BufferedReader reader = new BufferedReader(new InputStreamReader(

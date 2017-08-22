@@ -36,7 +36,7 @@ public class Main {
     static final int numItems = 102;
     static final List<String> items = items(0, numItems);
     static final int blockSize = numItems;
-    static final double minSup = 0.3;
+    static final int minFreq = 5;
     static final double maxIR = 0.02;
     static final double minCTD = 0.1;
     static final int numSamples = 100;
@@ -53,7 +53,7 @@ public class Main {
     static void driftDetection() throws Exception {
         ItemsetStreamReader stream =
                 new ItemsetStreamReader(inputFilePath, delimiterRegex, items);
-        new DriftDetector(stream, blockSize, minSup, maxIR, minCTD, numSamples, leaveOut).run();
+        new DriftDetector(stream, blockSize, minFreq, maxIR, minCTD, numSamples, leaveOut).run();
         System.out.println("Processed " + stream.read + " transactions.");
     }
 
@@ -64,14 +64,15 @@ public class Main {
         stream.discard(1000);
         ImmutableList<ImmutableSet<String>> secondHead = stream.head(1000);
 
-        CodeTable firstCT = CodeTable.optimalFor(firstHead, items, minSup);
-        CodeTable secondCT = CodeTable.optimalFor(secondHead, items, minSup);
+        CodeTable firstCT = CodeTable.optimalFor(firstHead, items, minFreq);
+        CodeTable secondCT = CodeTable.optimalFor(secondHead, items, minFreq);
 
         System.out.println(secondCT.differenceWith(firstCT, secondHead));
     }
 
     public static void main(String[] args) throws Exception {
-        compress();
+        driftDetection();
+        // compress();
     }
 
 }

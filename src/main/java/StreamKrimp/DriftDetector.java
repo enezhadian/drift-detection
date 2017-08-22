@@ -30,7 +30,7 @@ import DataStreamReader.ItemsetStreamReader;
 
 public class DriftDetector {
 
-    public DriftDetector(ItemsetStreamReader stream, int blockSize, double minSupport,
+    public DriftDetector(ItemsetStreamReader stream, int blockSize, int minFrequency,
                          double maxImprovementRate, double minCodeTableDifference,
                          int numSamples, double leaveOut) throws IllegalArgumentException {
 
@@ -40,7 +40,7 @@ public class DriftDetector {
 
         this.stream = stream;
         this.blockSize = blockSize;
-        this.minSupport = minSupport;
+        this.minFrequency = minFrequency;
         this.maxImprovementRate = maxImprovementRate;
         this.minCodeTableDifference = minCodeTableDifference;
         this.numSamples = numSamples;
@@ -84,7 +84,7 @@ public class DriftDetector {
 
     private final ItemsetStreamReader stream;
     private final int blockSize;
-    private final double minSupport;
+    private final int minFrequency;
     private final double maxImprovementRate;
     private final double minCodeTableDifference;
     private final int numSamples;
@@ -99,14 +99,14 @@ public class DriftDetector {
         int sliceSize = blockSize;
 
         convergedHead = stream.head(sliceSize);
-        convergedCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minSupport);
+        convergedCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minFrequency);
 
         CodeTable newCodeTable;
         double ir, len, newLen;
         do {
             sliceSize += blockSize;
             convergedHead = stream.head(sliceSize);
-            newCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minSupport);
+            newCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minFrequency);
 
             len = convergedCodeTable.totalLengthOf(convergedHead);
             newLen = newCodeTable.totalLengthOf(convergedHead);
