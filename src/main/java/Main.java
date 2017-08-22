@@ -44,8 +44,8 @@ public class Main {
         ItemsetStreamReader stream = new ItemsetStreamReader(
                 "data/letrecog.txt", "\\s", items);
 
-        DriftDetector detector = new DriftDetector(stream, numItems, minSupport,
-                maxImprovementRate,minCodeTableDifference, numSamples, leaveOut);
+        DriftDetector detector = new DriftDetector(stream, blockSize, minSupport,
+                maxImprovementRate, minCodeTableDifference, numSamples, leaveOut);
 
         detector.run();
 

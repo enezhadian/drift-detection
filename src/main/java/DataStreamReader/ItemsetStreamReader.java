@@ -44,14 +44,14 @@ public class ItemsetStreamReader {
      */
     public ItemsetStreamReader(String path,
                                String delimiterRegex,
-                               List items) throws FileNotFoundException {
+                               List<String> items) throws FileNotFoundException {
         this.reader = new BufferedReader(new InputStreamReader(new FileInputStream(path)));
         this.delimiter = Pattern.compile(delimiterRegex);
         this.head = null;
-        this.items = ImmutableList.builder().addAll(items).build();
+        this.items = ImmutableList.<String>builder().addAll(items).build();
     }
 
-    public ImmutableList items() {
+    public ImmutableList<String> items() {
         return items;
     }
 
@@ -60,7 +60,7 @@ public class ItemsetStreamReader {
      * @param maxSize Maximum number of of transactions to get.
      * @return head of data stream with size at most `maxSize`.
      */
-    public ImmutableList<ImmutableSet> head(int maxSize) throws NoSuchElementException {
+    public ImmutableList<ImmutableSet<String>> head(int maxSize) throws NoSuchElementException {
         expandHeadTo(maxSize);
         return head.subList(0, maxSize <= head.size() ? maxSize : head.size());
     }
@@ -77,7 +77,7 @@ public class ItemsetStreamReader {
         int skipSize;
 
         if (maxSize < headSize) {
-            head = ImmutableList.<ImmutableSet>builder()
+            head = ImmutableList.<ImmutableSet<String>>builder()
                     .addAll(head.subList(maxSize, headSize))
                     .build();
         } else {
@@ -91,8 +91,8 @@ public class ItemsetStreamReader {
 
     private final BufferedReader reader;
     private final Pattern delimiter;
-    private ImmutableList<ImmutableSet> head;
-    private final ImmutableList items;
+    private ImmutableList<ImmutableSet<String>> head;
+    private final ImmutableList<String> items;
 
     public int read = 0;
 
@@ -107,7 +107,7 @@ public class ItemsetStreamReader {
             return;
         }
 
-        ImmutableList.Builder<ImmutableSet> headBuilder = ImmutableList.builder();
+        ImmutableList.Builder<ImmutableSet<String>> headBuilder = ImmutableList.builder();
 
         if (head != null) {
             headBuilder.addAll(head);
@@ -121,7 +121,7 @@ public class ItemsetStreamReader {
                 read++;
 
                 size++;
-                ImmutableSet.Builder setBuilder = ImmutableSet.builder();
+                ImmutableSet.Builder<String> setBuilder = ImmutableSet.builder();
 
                 for (String item : delimiter.split(line)) {
                     setBuilder.add(item);

@@ -21,8 +21,6 @@
 package StreamKrimp;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 import com.google.common.collect.ImmutableList;
@@ -31,7 +29,6 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
 import ca.pfv.spmf.algorithms.frequentpatterns.apriori_close.AlgoAprioriClose;
-import com.sun.tools.javac.jvm.Code;
 
 
 /**
@@ -44,13 +41,13 @@ class CodeTable {
      * @param streamSlice
      * @return
      */
-    public static CodeTable optimalFor(ImmutableList<ImmutableSet> streamSlice,
-                                       ImmutableList items,
+    public static CodeTable optimalFor(ImmutableList<ImmutableSet<String>> streamSlice,
+                                       ImmutableList<String> items,
                                        double minSupport) {
         // These three lists are used as to get results from `findOptimalCodeLengthsFor`.
-        List<ImmutableSet> itemsets = new ArrayList<>();
-        List<ImmutableSet> candidates = new ArrayList<>();
-        List<ImmutableSet> singletons = new ArrayList<>();
+        List<ImmutableSet<String>> itemsets = new ArrayList<>();
+        List<ImmutableSet<String>> candidates = new ArrayList<>();
+        List<ImmutableSet<String>> singletons = new ArrayList<>();
 
         findCandidatesFor(streamSlice, items, minSupport, singletons, candidates);
         System.out.println("Found " + singletons.size() + " Singletons and "
@@ -61,13 +58,16 @@ class CodeTable {
         List<Float> candidateCodeLengths = new ArrayList<>(candidates.size());
 
         double currentLength = findOptimalCodeLengthsFor(streamSlice, itemsets, codeLengths);
-        CodeTable standardCodeTable = new CodeTable(itemsets, codeLengths, 0);
+//        CodeTable standardCodeTable = new CodeTable(
+//                ImmutableList.<ImmutableSet>builder().addAll(itemsets).build(),
+//                ImmutableList.<Float>builder().addAll(codeLengths).build(),
+//                0);
 
         double lengthWithItemset;
 
         List<Float> temp;
         int insertionIndex = 0;
-        for (ImmutableSet itemset : candidates) {
+        for (ImmutableSet<String> itemset : candidates) {
             // TODO[2]: Use the fastest data structure for frequent insertion and deletion in the middle.
             itemsets.add(insertionIndex, itemset);
             lengthWithItemset = findOptimalCodeLengthsFor(streamSlice,
@@ -89,12 +89,15 @@ class CodeTable {
             // TODO[2]: Add pruning.
         }
 
-        // TODO[1]: Calculate encoded size of code table.
-        ImmutableList<ImmutableSet> codeTableItemsets = ImmutableList.<ImmutableSet>builder()
-                .addAll(itemsets).build();
-        ImmutableList<Float> codeTableCodeLengths = ImmutableList.<Float>builder()
-                .addAll(codeLengths).build();
-        double length = findOptimalCodeLengthsFor(codeTableItemsets, singletons, null);
+        ImmutableList<ImmutableSet<String>> codeTableItemsets =
+                ImmutableList.<ImmutableSet<String>>builder().addAll(itemsets).build();
+        ImmutableList<Float> codeTableCodeLengths =
+                ImmutableList.<Float>builder().addAll(codeLengths).build();
+        double length = 0;
+//        for (int i =0; i < codeTableItemsets.size(); i++) {
+//            length += standardCodeTable.coverLengthOf(codeTableItemsets.get(i));
+//            length += codeTableCodeLengths.get(i);
+//        }
 
         CodeTable codeTable = new CodeTable(codeTableItemsets, codeTableCodeLengths, length);
         return codeTable;
@@ -105,7 +108,7 @@ class CodeTable {
      * @param streamSlice
      * @return
      */
-    public double totalLengthOf(ImmutableList<ImmutableSet> streamSlice) {
+    public double totalLengthOf(ImmutableList<ImmutableSet<String>> streamSlice) {
         return length() + lengthOf(streamSlice);
     }
 
@@ -115,7 +118,7 @@ class CodeTable {
      * @param streamSlice
      * @return
      */
-    public double differenceWith(CodeTable that, ImmutableList<ImmutableSet> streamSlice) {
+    public double differenceWith(CodeTable that, ImmutableList<ImmutableSet<String>> streamSlice) {
         // TODO[1]: Sometimes this is negative. Could it be an issue?
         double thisLen = this.totalLengthOf(streamSlice);
         double thatLen = that.totalLengthOf(streamSlice);
@@ -125,7 +128,7 @@ class CodeTable {
 
     private static final double log2 = Math.log(2);
 
-    private final ImmutableList<ImmutableSet> itemsets;
+    private final ImmutableList<ImmutableSet<String>> itemsets;
     private final ImmutableList<Float> codeLengths;
     private final double length;
 
@@ -136,16 +139,16 @@ class CodeTable {
      * @param singletons
      * @param candidates
      */
-    private static void findCandidatesFor(ImmutableList<ImmutableSet> streamSlice,
-                                          ImmutableList items,
+    private static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
+                                          ImmutableList<String> items,
                                           double minSupport,
-                                          List<ImmutableSet> singletons,
-                                          List<ImmutableSet> candidates) {
+                                          List<ImmutableSet<String>> singletons,
+                                          List<ImmutableSet<String>> candidates) {
         String input = "tmp/input";
         String output = "tmp/output";
         try {
             PrintWriter writer = new PrintWriter(input, "UTF-8");
-            for (ImmutableSet transaction : streamSlice) {
+            for (ImmutableSet<String> transaction : streamSlice) {
                 writer.println(String.join(" ", transaction.asList()));
             }
             writer.close();
@@ -158,21 +161,21 @@ class CodeTable {
                     new FileInputStream(output)));
             String line;
             String[] parts, is;
-            Map<ImmutableSet, Integer> candidatesMap = new HashMap();
+            Map<ImmutableSet<String>, Integer> candidatesMap = new HashMap<>();
             while ((line = reader.readLine()) != null) {
                 parts = line.split("\\s+#SUP:\\s+");
                 is = parts[0].split("\\s+");
 
                 if (is.length > 1) {
-                    ImmutableSet.Builder setBuilder = ImmutableSet.builder();
-                    for (Object item : is) {
+                    ImmutableSet.Builder<String> setBuilder = ImmutableSet.builder();
+                    for (String item : is) {
                         setBuilder.add(item);
                     }
                     candidatesMap.put(setBuilder.build(), Integer.parseInt(parts[1]));
                 }
             }
             candidates.addAll(candidatesMap.keySet());
-            candidates.sort((ImmutableSet x, ImmutableSet y) -> {
+            candidates.sort((ImmutableSet<String> x, ImmutableSet<String> y) -> {
                 int xSize = x.size();
                 int ySize = y.size();
                 if (xSize == ySize) {
@@ -185,9 +188,11 @@ class CodeTable {
             });
 
             singletons.clear();
-            for (Object item : items) {
-                singletons.add(ImmutableSet.builder().add(item).build());
+            for (String item : items) {
+                singletons.add(ImmutableSet.<String>builder().add(item).build());
             }
+
+            reader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -200,8 +205,8 @@ class CodeTable {
      * @param codeLengths
      * @return
      */
-    private static double findOptimalCodeLengthsFor(ImmutableList<ImmutableSet> streamSlice,
-                                                    List<ImmutableSet> itemsets,
+    private static double findOptimalCodeLengthsFor(ImmutableList<ImmutableSet<String>> streamSlice,
+                                                    List<ImmutableSet<String>> itemsets,
                                                     List<Float> codeLengths) {
         // TODO[2]: Make this method faster.
         // Calculate the usage of each itemset and store them in `codeLengths`.
@@ -214,9 +219,9 @@ class CodeTable {
             codeLengths.add(0f);
         }
 
-        SetView residue;
-        ImmutableSet itemset;
-        for (ImmutableSet transaction : streamSlice) {
+        SetView<String> residue;
+        ImmutableSet<String> itemset;
+        for (ImmutableSet<String> transaction : streamSlice) {
             // TODO[2]: Find a better way to create a `SetView` (Also applies to `coverLengthOf`).
             residue = Sets.intersection(transaction, transaction);
 
@@ -263,7 +268,7 @@ class CodeTable {
     /**
      * TODO[4]: Documentation.
      */
-    private CodeTable(ImmutableList<ImmutableSet> itemsets,
+    private CodeTable(ImmutableList<ImmutableSet<String>> itemsets,
                       ImmutableList<Float> codeLengths,
                       double length) {
         this.itemsets = itemsets;
@@ -284,9 +289,9 @@ class CodeTable {
      * @param streamSlice
      * @return
      */
-    private double lengthOf(ImmutableList<ImmutableSet> streamSlice) {
+    private double lengthOf(ImmutableList<ImmutableSet<String>> streamSlice) {
         double totalCoverLength = 0;
-        for (ImmutableSet transaction : streamSlice) {
+        for (ImmutableSet<String> transaction : streamSlice) {
             totalCoverLength += coverLengthOf(transaction);
         }
         return totalCoverLength;
@@ -297,9 +302,9 @@ class CodeTable {
      * @param transaction A transaction from data stream.
      * @return the sum of code lengths for all the itemsets in the cover of given transaction.
      */
-    private double coverLengthOf(ImmutableSet transaction) {
-        SetView residue = Sets.intersection(transaction, transaction);
-        ImmutableSet itemset;
+    private double coverLengthOf(ImmutableSet<String> transaction) {
+        SetView<String> residue = Sets.intersection(transaction, transaction);
+        ImmutableSet<String> itemset;
         double coverLength = 0;
 
         for (int i = 0; i < itemsets.size(); i++) {

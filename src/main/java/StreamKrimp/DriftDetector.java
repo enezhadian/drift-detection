@@ -106,7 +106,7 @@ public class DriftDetector {
 
     // Remember last code table and the corresponding head of stream found by `findCodeTable`.
     private CodeTable convergedCodeTable;
-    private ImmutableList<ImmutableSet> convergedHead;
+    private ImmutableList<ImmutableSet<String>> convergedHead;
 
     /**
      * TODO[4]: Documentation.
@@ -150,7 +150,7 @@ public class DriftDetector {
                     indexes.add(random.nextInt(convergedHead.size()));
                 }
 
-                ImmutableList.Builder sampleBuilder = ImmutableList.builder();
+                ImmutableList.Builder<ImmutableSet<String>> sampleBuilder = ImmutableList.builder();
                 for (int index : indexes) {
                     sampleBuilder.add(convergedHead.get(index));
                 }
@@ -167,7 +167,7 @@ public class DriftDetector {
 
         // Discard conforming blocks.
         double blockLength;
-        ImmutableList<ImmutableSet> block;
+        ImmutableList<ImmutableSet<String>> block;
         while (true) {
             block = stream.head(blockSize);
             if (block.size() == 0) {
