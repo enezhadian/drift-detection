@@ -60,17 +60,13 @@ public class Main {
     public static void compress() throws Exception {
         ItemsetStreamReader stream =
                 new ItemsetStreamReader(inputFilePath, delimiterRegex, items(0, numItems));
-        ImmutableList<ImmutableSet<String>> firstHead = stream.head(1000);
-        stream.discard(1000);
-        ImmutableList<ImmutableSet<String>> secondHead = stream.head(1000);
-
-        CodeTable firstCT = CodeTable.optimalFor(firstHead, items, minFreq);
-        CodeTable secondCT = CodeTable.optimalFor(secondHead, items, minFreq);
+        ImmutableList<ImmutableSet<String>> head = stream.head(20000);
+        CodeTable codeTable = CodeTable.optimalFor(head, items, minFreq);
     }
 
     public static void main(String[] args) throws Exception {
-        driftDetection();
-        // compress();
+        // driftDetection();
+        compress();
     }
 
 }
