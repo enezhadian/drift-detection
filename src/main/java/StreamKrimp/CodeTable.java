@@ -214,24 +214,19 @@ public class CodeTable {
         }
 
         // Calculate compressed length of stream slice.
-        double totalUsage = 0;
-        double compressedLength = 0; // Sum of code lengths of covers of transactions.
+        float totalUsage = 0;
         for (float usage : codeLengths) {
-            if (usage != 0) {
-                totalUsage += usage;
-                compressedLength += usage * (-1) * Math.log(usage) / log2;
-            }
+            totalUsage += usage;
         }
 
-        double logTotalUsage = Math.log(totalUsage) / log2;
-        compressedLength += totalUsage * logTotalUsage;
-
-        // Calculate the optimal code length for each itemset.
-        double codeLength;
+        float usage, codeLength;
+        double compressedLength = 0; // Sum of code lengths of covers of transactions.
         for (int i = 0; i < codeLengths.size(); i++) {
-            codeLength = codeLengths.get(i);
-            if (codeLength != 0) {
-                codeLengths.set(i, (float) (-Math.log(codeLength) / log2 + logTotalUsage));
+            usage = codeLengths.get(i);
+            if (usage > 0) {
+                codeLength = (float)(-Math.log(usage / totalUsage) / log2);
+                compressedLength += usage * codeLength;
+                codeLengths.set(i, codeLength);
             }
         }
 
