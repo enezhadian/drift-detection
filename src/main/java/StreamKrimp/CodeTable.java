@@ -132,9 +132,9 @@ public class CodeTable {
             }
             writer.close();
 
+            double minSupport = (double) minFrequency / streamSlice.size();
             AlgoAprioriClose apriori = new AlgoAprioriClose();
-            double minSupportPercentage = 100.0 * minFrequency / streamSlice.size();
-            apriori.runAlgorithm(minSupportPercentage, input, output);
+            apriori.runAlgorithm(minSupport, input, output);
 
             candidates.clear();
             BufferedReader reader = new BufferedReader(new InputStreamReader(

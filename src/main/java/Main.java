@@ -31,16 +31,16 @@ import StreamKrimp.DriftDetector;
 
 public class Main {
 
-    static final String inputFilePath = "data/letrecog.txt";
+    static final String inputFilePath = "data/chessBig.txt";
     static final String delimiterRegex = "\\s";
-    static final int numItems = 102;
+    static final int numItems = 58;
     static final List<String> items = items(0, numItems);
     static final int blockSize = numItems;
-    static final int minFreq = 20;
+    static final int minFreq = 10;
     static final double maxIR = 0.02;
     static final double minCTD = 0.1;
     static final int numSamples = 100;
-    static final double leaveOut = 0.01;
+    static final double nSigma = 2;
 
     static List<String> items(int incStart, int excEnd) {
         List<String> items = new ArrayList<>();
@@ -53,7 +53,7 @@ public class Main {
     static void driftDetection() throws Exception {
         ItemsetStreamReader stream =
                 new ItemsetStreamReader(inputFilePath, delimiterRegex, items);
-        new DriftDetector(stream, blockSize, minFreq, maxIR, minCTD, numSamples, leaveOut).run();
+        new DriftDetector(stream, blockSize, minFreq, maxIR, minCTD, numSamples, nSigma).run();
         System.out.println("Processed " + stream.read + " transactions.");
     }
 
@@ -65,8 +65,8 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        // driftDetection();
-        compress();
+        driftDetection();
+        // compress();
     }
 
 }
