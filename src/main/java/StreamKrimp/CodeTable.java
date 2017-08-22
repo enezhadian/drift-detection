@@ -97,7 +97,7 @@ public class CodeTable {
         ImmutableList<Float> codeTableCodeLengths =
                 ImmutableList.<Float>builder().addAll(codeLengths).build();
         double length = 0;
-        for (int i =0; i < codeTableItemsets.size(); i++) {
+        for (int i = 0; i < codeTableItemsets.size(); i++) {
             length += standardCodeTable.coverLengthOf(codeTableItemsets.get(i));
             length += codeTableCodeLengths.get(i);
         }
