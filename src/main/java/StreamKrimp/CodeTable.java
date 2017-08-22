@@ -31,10 +31,10 @@ import com.google.common.collect.Sets.SetView;
 import ca.pfv.spmf.algorithms.frequentpatterns.apriori_close.AlgoAprioriClose;
 
 
-class CodeTable {
+public class CodeTable {
 
     public static CodeTable optimalFor(ImmutableList<ImmutableSet<String>> streamSlice,
-                                       ImmutableList<String> items,
+                                       List<String> items,
                                        double minSupport) {
         // These three lists are used as to get results from `findOptimalCodeLengthsFor`.
         List<ImmutableSet<String>> itemsets = new ArrayList<>();
@@ -50,10 +50,10 @@ class CodeTable {
         List<Float> candidateCodeLengths = new ArrayList<>(candidates.size());
 
         double currentLength = findOptimalCodeLengthsFor(streamSlice, itemsets, codeLengths);
-//        CodeTable standardCodeTable = new CodeTable(
-//                ImmutableList.<ImmutableSet>builder().addAll(itemsets).build(),
-//                ImmutableList.<Float>builder().addAll(codeLengths).build(),
-//                0);
+        // CodeTable standardCodeTable = new CodeTable(
+        //         ImmutableList.<ImmutableSet<String>>builder().addAll(itemsets).build(),
+        //         ImmutableList.<Float>builder().addAll(codeLengths).build(),
+        //         0);
 
         double lengthWithItemset;
 
@@ -65,10 +65,21 @@ class CodeTable {
             lengthWithItemset = findOptimalCodeLengthsFor(streamSlice,
                     itemsets, candidateCodeLengths);
 
-            if (lengthWithItemset > currentLength) {
+            // System.out.print("Length with itemset " + Arrays.toString(itemset.toArray()) + ": " +
+            //         lengthWithItemset);
+
+            if (lengthWithItemset == currentLength) {
+                // System.out.println("=> === EQUAL ===");
                 // Remove the itemset as it doesn't seem to contribute to the compression.
                 itemsets.remove(insertionIndex);
+            }
+            else if (lengthWithItemset > currentLength) {
+                // System.out.println("=> --- IGNORED ---");
+                // Remove the itemset as it doesn't seem to contribute to the compression.
+                itemsets.remove(insertionIndex);
+
             } else {
+                // System.out.println("=> +++ ADDED +++");
                 // Store code lengths, but also use already allocated space for future computations.
                 temp = codeLengths;
                 codeLengths = candidateCodeLengths;
@@ -86,11 +97,12 @@ class CodeTable {
         ImmutableList<Float> codeTableCodeLengths =
                 ImmutableList.<Float>builder().addAll(codeLengths).build();
         double length = 0;
-//        for (int i =0; i < codeTableItemsets.size(); i++) {
-//            length += standardCodeTable.coverLengthOf(codeTableItemsets.get(i));
-//            length += codeTableCodeLengths.get(i);
-//        }
+        // for (int i =0; i < codeTableItemsets.size(); i++) {
+        //     length += standardCodeTable.coverLengthOf(codeTableItemsets.get(i));
+        //     length += codeTableCodeLengths.get(i);
+        // }
 
+        System.out.println("Minimum length: " + currentLength);
         CodeTable codeTable = new CodeTable(codeTableItemsets, codeTableCodeLengths, length);
         return codeTable;
     }
@@ -114,7 +126,7 @@ class CodeTable {
     private final double length;
 
     private static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
-                                          ImmutableList<String> items,
+                                          List<String> items,
                                           double minSupport,
                                           List<ImmutableSet<String>> singletons,
                                           List<ImmutableSet<String>> candidates) {

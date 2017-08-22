@@ -21,35 +21,57 @@
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import DataStreamReader.ItemsetStreamReader;
+import StreamKrimp.CodeTable;
 import StreamKrimp.DriftDetector;
 
 
 public class Main {
 
-    public static void main(String[] args) throws Exception {
-        int numItems = 102;
-        int blockSize = numItems;
-        double minSupport = 0.3;
-        double maxImprovementRate = 0.02;
-        double minCodeTableDifference = 0.1;
-        int numSamples = 100;
-        double leaveOut = 0.01;
+    static final String inputFilePath = "data/letrecog.txt";
+    static final String delimiterRegex = "\\s";
+    static final int numItems = 102;
+    static final List<String> items = items(0, numItems);
+    static final int blockSize = numItems;
+    static final double minSup = 0.3;
+    static final double maxIR = 0.02;
+    static final double minCTD = 0.1;
+    static final int numSamples = 100;
+    static final double leaveOut = 0.01;
 
+    static List<String> items(int incStart, int excEnd) {
         List<String> items = new ArrayList<>();
         for (int i = 0; i < numItems; i++) {
             items.add(Integer.toString(i));
         }
+        return items;
+    }
 
-        ItemsetStreamReader stream = new ItemsetStreamReader(
-                "data/letrecog.txt", "\\s", items);
-
-        DriftDetector detector = new DriftDetector(stream, blockSize, minSupport,
-                maxImprovementRate, minCodeTableDifference, numSamples, leaveOut);
-
-        detector.run();
-
+    static void driftDetection() throws Exception {
+        ItemsetStreamReader stream =
+                new ItemsetStreamReader(inputFilePath, delimiterRegex, items);
+        new DriftDetector(stream, blockSize, minSup, maxIR, minCTD, numSamples, leaveOut).run();
         System.out.println("Processed " + stream.read + " transactions.");
+    }
+
+    public static void compress() throws Exception {
+        ItemsetStreamReader stream =
+                new ItemsetStreamReader(inputFilePath, delimiterRegex, items(0, numItems));
+        ImmutableList<ImmutableSet<String>> firstHead = stream.head(1000);
+        stream.discard(1000);
+        ImmutableList<ImmutableSet<String>> secondHead = stream.head(1000);
+
+        CodeTable firstCT = CodeTable.optimalFor(firstHead, items, minSup);
+        CodeTable secondCT = CodeTable.optimalFor(secondHead, items, minSup);
+
+        System.out.println(secondCT.differenceWith(firstCT, secondHead));
+    }
+
+    public static void main(String[] args) throws Exception {
+        compress();
     }
 
 }
