@@ -111,13 +111,6 @@ public class CodeTable {
         return length() + lengthOf(streamSlice);
     }
 
-    public double differenceWith(CodeTable that, ImmutableList<ImmutableSet<String>> streamSlice) {
-        // FIXME: Sometimes this is negative. This should not happen!
-        double thisLen = this.totalLengthOf(streamSlice);
-        double thatLen = that.totalLengthOf(streamSlice);
-        return (thatLen - thisLen) / thisLen;
-    }
-
 
     private static final double log2 = Math.log(2);
 

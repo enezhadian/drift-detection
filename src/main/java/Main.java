@@ -36,7 +36,7 @@ public class Main {
     static final int numItems = 102;
     static final List<String> items = items(0, numItems);
     static final int blockSize = numItems;
-    static final int minFreq = 5;
+    static final int minFreq = 20;
     static final double maxIR = 0.02;
     static final double minCTD = 0.1;
     static final int numSamples = 100;
@@ -66,8 +66,6 @@ public class Main {
 
         CodeTable firstCT = CodeTable.optimalFor(firstHead, items, minFreq);
         CodeTable secondCT = CodeTable.optimalFor(secondHead, items, minFreq);
-
-        System.out.println(secondCT.differenceWith(firstCT, secondHead));
     }
 
     public static void main(String[] args) throws Exception {

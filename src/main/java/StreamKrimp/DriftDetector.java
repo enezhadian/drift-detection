@@ -61,8 +61,9 @@ public class DriftDetector {
                 discardBlocksConformingTo(doSample);
 
                 findCodeTable();
-                double difference = convergedCodeTable.differenceWith(
-                        currentCodeTable, convergedHead);
+                double len = currentCodeTable.totalLengthOf(convergedHead);
+                double newLen = convergedCodeTable.totalLengthOf(convergedHead);
+                double difference = (len - newLen) / newLen;
 
                 if (difference >= minCodeTableDifference) {
                     // TODO: Report concept drift in more useful way.
