@@ -29,19 +29,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 
-// TODO[3]: Make this thread-safe to be able to respond to multiple stream processors.
-// TODO[3]: Use the smallest integer type rather than keeping multiple copies of each item's name.
-/**
- * TODO[4]: Documentation.
- */
+// TODO: Make this thread-safe to be able to respond to multiple stream processors.
+// TODO: Use the smallest integer type rather than keeping multiple copies of each item's name.
 public class ItemsetStreamReader {
 
-    /**
-     * TODO[4]: Documentation.
-     * @param path
-     * @param delimiterRegex
-     * @throws FileNotFoundException
-     */
     public ItemsetStreamReader(String path,
                                String delimiterRegex,
                                List<String> items) throws FileNotFoundException {
@@ -55,23 +46,11 @@ public class ItemsetStreamReader {
         return items;
     }
 
-    /**
-     * Get transactions from data stream starting after last discarded transaction.
-     * @param maxSize Maximum number of of transactions to get.
-     * @return head of data stream with size at most `maxSize`.
-     */
     public ImmutableList<ImmutableSet<String>> head(int maxSize) throws NoSuchElementException {
         expandHeadTo(maxSize);
         return head.subList(0, maxSize <= head.size() ? maxSize : head.size());
     }
 
-    /**
-     * Discard given number of transactions after last discarded transaction or from the beginning
-     * of data stream.
-     * TODO[4]: Documentation.
-     * @param maxSize
-     * @return
-     */
     public void discard(int maxSize) {
         int headSize = head != null ? head.size() : 0;
         int skipSize;
@@ -96,11 +75,6 @@ public class ItemsetStreamReader {
 
     public int read = 0;
 
-    /**
-     * TODO[4]: Documentation.
-     * @param maxSize
-     * @return
-     */
     private void expandHeadTo(int maxSize) throws NoSuchElementException {
         if (head != null && head.size() >= maxSize) {
             // Head is already big enough.

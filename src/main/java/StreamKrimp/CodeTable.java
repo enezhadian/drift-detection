@@ -31,16 +31,8 @@ import com.google.common.collect.Sets.SetView;
 import ca.pfv.spmf.algorithms.frequentpatterns.apriori_close.AlgoAprioriClose;
 
 
-/**
- * TODO[4]: Documentation.
- */
 class CodeTable {
 
-    /**
-     * TODO[4]: Documentation.
-     * @param streamSlice
-     * @return
-     */
     public static CodeTable optimalFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                        ImmutableList<String> items,
                                        double minSupport) {
@@ -68,7 +60,7 @@ class CodeTable {
         List<Float> temp;
         int insertionIndex = 0;
         for (ImmutableSet<String> itemset : candidates) {
-            // TODO[2]: Use the fastest data structure for frequent insertion and deletion in the middle.
+            // TODO: Use the fastest data structure for frequent insertion and deletion in the middle.
             itemsets.add(insertionIndex, itemset);
             lengthWithItemset = findOptimalCodeLengthsFor(streamSlice,
                     itemsets, candidateCodeLengths);
@@ -86,7 +78,7 @@ class CodeTable {
 
                 insertionIndex++;
             }
-            // TODO[2]: Add pruning.
+            // TODO: Add pruning.
         }
 
         ImmutableList<ImmutableSet<String>> codeTableItemsets =
@@ -103,23 +95,12 @@ class CodeTable {
         return codeTable;
     }
 
-    /**
-     * TODO[4]: Documentation.
-     * @param streamSlice
-     * @return
-     */
     public double totalLengthOf(ImmutableList<ImmutableSet<String>> streamSlice) {
         return length() + lengthOf(streamSlice);
     }
 
-    /**
-     * TODO[4]: Documentation.
-     * @param otherCodeTable
-     * @param streamSlice
-     * @return
-     */
     public double differenceWith(CodeTable that, ImmutableList<ImmutableSet<String>> streamSlice) {
-        // TODO[1]: Sometimes this is negative. Could it be an issue?
+        // FIXME: Sometimes this is negative. This should not happen!
         double thisLen = this.totalLengthOf(streamSlice);
         double thatLen = that.totalLengthOf(streamSlice);
         return (thatLen - thisLen) / thisLen;
@@ -132,13 +113,6 @@ class CodeTable {
     private final ImmutableList<Float> codeLengths;
     private final double length;
 
-    /**
-     * TODO[4]: Documentation.
-     * @param streamSlice
-     * @param minSupport
-     * @param singletons
-     * @param candidates
-     */
     private static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                           ImmutableList<String> items,
                                           double minSupport,
@@ -198,17 +172,10 @@ class CodeTable {
         }
     }
 
-    /**
-     * TODO[4]: Documentation.
-     * @param streamSlice
-     * @param itemsets Should be in proper order.
-     * @param codeLengths
-     * @return
-     */
     private static double findOptimalCodeLengthsFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                                     List<ImmutableSet<String>> itemsets,
                                                     List<Float> codeLengths) {
-        // TODO[2]: Make this method faster.
+        // TODO: Make this method faster.
         // Calculate the usage of each itemset and store them in `codeLengths`.
         if (codeLengths == null) {
             codeLengths = new ArrayList<>(itemsets.size());
@@ -222,7 +189,7 @@ class CodeTable {
         SetView<String> residue;
         ImmutableSet<String> itemset;
         for (ImmutableSet<String> transaction : streamSlice) {
-            // TODO[2]: Find a better way to create a `SetView` (Also applies to `coverLengthOf`).
+            // TODO: Find a better way to create a `SetView` (Also applies to `coverLengthOf`).
             residue = Sets.intersection(transaction, transaction);
 
             for (int i = 0; i < itemsets.size(); i++) {
@@ -265,9 +232,6 @@ class CodeTable {
         return compressedLength;
     }
 
-    /**
-     * TODO[4]: Documentation.
-     */
     private CodeTable(ImmutableList<ImmutableSet<String>> itemsets,
                       ImmutableList<Float> codeLengths,
                       double length) {
@@ -276,19 +240,10 @@ class CodeTable {
         this.length = length;
     }
 
-    /**
-     * TODO[4]: Documentation.
-     * @return
-     */
     private double length() {
         return length;
     }
 
-    /**
-     *  TODO[4]: Documentation.
-     * @param streamSlice
-     * @return
-     */
     private double lengthOf(ImmutableList<ImmutableSet<String>> streamSlice) {
         double totalCoverLength = 0;
         for (ImmutableSet<String> transaction : streamSlice) {
@@ -297,11 +252,6 @@ class CodeTable {
         return totalCoverLength;
     }
 
-    /**
-     * Calculate the length of encoded cover for a transaction.
-     * @param transaction A transaction from data stream.
-     * @return the sum of code lengths for all the itemsets in the cover of given transaction.
-     */
     private double coverLengthOf(ImmutableSet<String> transaction) {
         SetView<String> residue = Sets.intersection(transaction, transaction);
         ImmutableSet<String> itemset;

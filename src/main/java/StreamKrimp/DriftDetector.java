@@ -30,16 +30,6 @@ import DataStreamReader.ItemsetStreamReader;
 
 public class DriftDetector {
 
-    /**
-     * TODO[4]: Documentation.
-     * @param stream
-     * @param blockSize
-     * @param minSupport
-     * @param maxImprovementRate
-     * @param minCodeTableDifference
-     * @param numSamples
-     * @param leaveOut
-     */
     public DriftDetector(ItemsetStreamReader stream, int blockSize, double minSupport,
                          double maxImprovementRate, double minCodeTableDifference,
                          int numSamples, double leaveOut) throws IllegalArgumentException {
@@ -58,9 +48,6 @@ public class DriftDetector {
         this.sampleLengths = new double[numSamples];
     }
 
-    /**
-     * TODO[4]: Documentation.
-     */
     public void run() {
         CodeTable currentCodeTable;
 
@@ -78,7 +65,7 @@ public class DriftDetector {
                         currentCodeTable, convergedHead);
 
                 if (difference >= minCodeTableDifference) {
-                    // TODO[2]: Report concept drift.
+                    // TODO: Report concept drift in more useful way.
                     System.out.println("++++ DRIFT DETECTED (DIFF: "  + difference + ") ++++");
                     currentCodeTable = convergedCodeTable;
                     stream.discard(convergedHead.size());
@@ -108,10 +95,6 @@ public class DriftDetector {
     private CodeTable convergedCodeTable;
     private ImmutableList<ImmutableSet<String>> convergedHead;
 
-    /**
-     * TODO[4]: Documentation.
-     * @return
-     */
     private void findCodeTable() {
         int sliceSize = blockSize;
 
@@ -133,10 +116,6 @@ public class DriftDetector {
         } while (ir > maxImprovementRate);
     }
 
-    /**
-     * TODO[4]: Documentation.
-     * @return
-     */
     private void discardBlocksConformingTo(boolean doSample) {
         // Sample head and calculate their encoded length.
         if (doSample) {
