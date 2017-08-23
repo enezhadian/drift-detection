@@ -22,8 +22,6 @@ package StreamKrimp;
 
 import java.util.*;
 
-import javax.swing.text.AbstractDocument.LeafElement;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
