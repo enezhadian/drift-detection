@@ -45,20 +45,23 @@ public class CodeTable {
         List<ImmutableSet<String>> singletons = new ArrayList<>();
 
         findCandidatesFor(streamSlice, items, minFrequency, singletons, candidates);
-        System.out.println("Found " + singletons.size() + " Singletons and "
-                + candidates.size() + " candidates.");
+        System.out.println("Found " + singletons.size() + " Singletons and " + candidates.size() + " candidates.");
 
-        itemsets.addAll(singletons);
+        List<Integer> usageCounts = new ArrayList<>(candidates.size());
+        List<Integer> candidateUsageCounts = new ArrayList<>(candidates.size());
         List<Float> codeLengths = new ArrayList<>(candidates.size());
         List<Float> candidateCodeLengths = new ArrayList<>(candidates.size());
 
-        double currentLength = findOptimalCodeLengthsFor(streamSlice, itemsets, codeLengths);
+        double currentLength, lengthWithItemset;
+
+        itemsets.addAll(singletons);
+        findUsageCountsFor(streamSlice, itemsets, usageCounts);
+        currentLength = calculateOptimalCodeLengthsFor(usageCounts, codeLengths);
+
         CodeTable standardCodeTable = new CodeTable(
                 ImmutableList.<ImmutableSet<String>>builder().addAll(itemsets).build(),
                 ImmutableList.<Float>builder().addAll(codeLengths).build(),
                 0);
-
-        double lengthWithItemset;
 
         List<Float> temp;
         int insertionIndex = 0;
@@ -76,8 +79,9 @@ public class CodeTable {
             candidateCodeLengths.addAll(codeLengths);
             candidateCodeLengths.add(insertionIndex, (float) 0);
 
-            lengthWithItemset = findOptimalCodeLengthsFor(streamSlice, itemsets, insertionIndex,
-                    currentLength, candidateCodeLengths);
+            updateUsageCountsFor(streamSlice, itemsets, insertionIndex, candidateUsageCounts);
+            lengthWithItemset = calculateOptimalCodeLengthsFor(candidateUsageCounts, candidateCodeLengths);
+
 
             // System.out.print("Length with itemset " + Arrays.toString(itemset.toArray()) + ": " +
             //         lengthWithItemset);
@@ -108,8 +112,7 @@ public class CodeTable {
 
         ImmutableList<ImmutableSet<String>> codeTableItemsets =
                 ImmutableList.<ImmutableSet<String>>builder().addAll(itemsets).build();
-        ImmutableList<Float> codeTableCodeLengths =
-                ImmutableList.<Float>builder().addAll(codeLengths).build();
+        ImmutableList<Float> codeTableCodeLengths = ImmutableList.<Float>builder().addAll(codeLengths).build();
         double length = 0;
         for (int i = 0; i < codeTableItemsets.size(); i++) {
             length += standardCodeTable.coverLengthOf(codeTableItemsets.get(i));
@@ -168,31 +171,29 @@ public class CodeTable {
         });
     }
 
-    private static double findOptimalCodeLengthsFor(ImmutableList<ImmutableSet<String>> streamSlice,
-                                                    List<ImmutableSet<String>> itemsets,
-                                                    List<Float> outputCodeLengths) {
-        // TODO: Make this method faster.
-        // Calculate the usage of each itemset and store them in `codeLengths`.
-        if (outputCodeLengths == null) {
-            outputCodeLengths = new ArrayList<>(itemsets.size());
+    private static void findUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
+                                          List<ImmutableSet<String>> itemsets,
+                                          List<Integer> outputUsageCounts) {
+        if (outputUsageCounts == null) {
+            throw new IllegalArgumentException("Output arguments cannot be null.");
         }
 
-        outputCodeLengths.clear();
+        outputUsageCounts.clear();
         for (int i = 0; i < itemsets.size(); i++) {
-            outputCodeLengths.add(0f);
+            outputUsageCounts.add(0);
         }
 
         SetView<String> residue;
         ImmutableSet<String> itemset;
         for (ImmutableSet<String> transaction : streamSlice) {
-            // TODO: Find a better way to create a `SetView` (Also applies to `coverLengthOf`).
+            // TODO: Find a better way to create a `SetView`.
             residue = Sets.intersection(transaction, transaction);
 
             for (int i = 0; i < itemsets.size(); i++) {
                 itemset = itemsets.get(i);
 
                 if (residue.containsAll(itemset)) {
-                    outputCodeLengths.set(i, outputCodeLengths.get(i) + 1);
+                    outputUsageCounts.set(i, outputUsageCounts.get(i) + 1);
 
                     if (itemset.size() == residue.size()) {
                         break;
@@ -202,34 +203,87 @@ public class CodeTable {
                 }
             }
         }
+    }
 
-        // Calculate compressed length of stream slice.
-        float totalUsage = 0;
-        for (float usage : outputCodeLengths) {
+    private static void updateUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
+                                            List<ImmutableSet<String>> itemsets,
+                                            int newItemsetIndex,
+                                            List<Integer> inputOutputUsageCounts) {
+        // TODO: Implement this.
+        ImmutableSet<String> newItemset = itemsets.get(newItemsetIndex);
+
+        SetView<String> residue;
+        ImmutableSet<String> itemset;
+        for (ImmutableSet<String> transaction : streamSlice) {
+            if (transaction.containsAll(newItemset)) {
+                // Uncount previous usages for this transaction.
+                residue = Sets.intersection(transaction, transaction);
+
+                for (int i = 0; i < itemsets.size(); i++) {
+                    if (i != newItemsetIndex) {
+                        itemset = itemsets.get(i);
+
+                        if (residue.containsAll(itemset)) {
+                            inputOutputUsageCounts.set(i, inputOutputUsageCounts.get(i) - 1);
+
+                            if (itemset.size() == residue.size()) {
+                                break;
+                            } else {
+                                residue = Sets.difference(residue, itemset);
+                            }
+                        }
+                    }
+                }
+
+                // Cover the transaction with new itemsets.
+                inputOutputUsageCounts.set(newItemsetIndex,
+                    inputOutputUsageCounts.get(newItemsetIndex) + 1);
+                residue = Sets.difference(transaction, newItemset);
+
+                for (int i = 0; i < itemsets.size(); i++) {
+                    if (i != newItemsetIndex) {
+                        itemset = itemsets.get(i);
+
+                        if (residue.containsAll(itemset)) {
+                            inputOutputUsageCounts.set(i, inputOutputUsageCounts.get(i) + 1);
+
+                            if (itemset.size() == residue.size()) {
+                                break;
+                            } else {
+                                residue = Sets.difference(residue, itemset);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static double calculateOptimalCodeLengthsFor(List<Integer> usageCounts,
+                                                         List<Float> outputCodeLength) {
+        if (outputCodeLength == null) {
+            throw new IllegalArgumentException("Output arguments cannot be null.");
+        }
+
+        // Calculate total usage count.
+        int totalUsage = 0;
+        for (int usage : usageCounts) {
             totalUsage += usage;
         }
 
+        // Calculate optimal code lengths and total cover size.
         float usage, codeLength;
-        double sliceLength = 0; // Sum of code lengths of covers of transactions.
-        for (int i = 0; i < outputCodeLengths.size(); i++) {
-            usage = outputCodeLengths.get(i);
+        double sliceLength = 0;
+        for (int i = 0; i < usageCounts.size(); i++) {
+            usage = usageCounts.get(i);
             if (usage > 0) {
                 codeLength = (float)(-Math.log(usage / totalUsage) / log2);
                 sliceLength += usage * codeLength;
-                outputCodeLengths.set(i, codeLength);
+                outputCodeLength.set(i, codeLength);
             }
         }
 
         return sliceLength;
-    }
-
-    private static double findOptimalCodeLengthsFor(ImmutableList<ImmutableSet<String>> streamSlice,
-                                                    List<ImmutableSet<String>> itemsets,
-                                                    int newItemsetIndex,
-                                                    double optimalLengthWithoutNewItemset,
-                                                    List<Float> inputOutputCodeLengths) {
-        // TODO: Implement this.
-        return 0;
     }
 
     /*--------------------------------------------------------------------------*
@@ -265,6 +319,7 @@ public class CodeTable {
     }
 
     private double coverLengthOf(ImmutableSet<String> transaction) {
+        // TODO: Find a better way to create a `SetView`
         SetView<String> residue = Sets.intersection(transaction, transaction);
         ImmutableSet<String> itemset;
         double coverLength = 0;
