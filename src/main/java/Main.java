@@ -65,49 +65,9 @@ public class Main {
         CodeTable codeTable = CodeTable.optimalFor(head, items, minFreq);
     }
 
-    public static void test() throws Exception {
-        ItemsetStreamReader stream =
-                new ItemsetStreamReader(inputFilePath, delimiterRegex, items(0, numItems));
-        ImmutableList<ImmutableSet<String>> head = stream.head(1000);
-
-        List<ImmutableSet<String>> itemsets = new ArrayList<>();
-        List<ImmutableSet<String>> candidates = new ArrayList<>();
-        List<Integer> usageCounts1 = new ArrayList<>();
-        List<Integer> usageCounts2 = new ArrayList<>();
-
-        CodeTable.findCandidatesFor(head, items, minFreq, itemsets, candidates);
-        CodeTable.findUsageCountsFor(head, itemsets, usageCounts1);
-
-        System.out.println(candidates.size());
-
-        List temp;
-        int insertionIndex = 0;
-        for (ImmutableSet<String> itemset : candidates) {
-            // TODO: Use the fastest data structure for frequent insertion and deletion in the middle.
-            itemsets.add(insertionIndex, itemset);
-
-            usageCounts2.clear();
-            usageCounts2.addAll(usageCounts1);
-            usageCounts2.add(insertionIndex, 0);
-
-            CodeTable.updateUsageCountsFor(head, itemsets, insertionIndex, usageCounts2);
-            CodeTable.findUsageCountsFor(head, itemsets, usageCounts1);
-
-            if (!Arrays.equals(usageCounts1.toArray(), usageCounts2.toArray())) {
-                System.out.println("Wrong!");
-                break;
-            }
-
-            insertionIndex++;
-
-        }
-
-    }
-
     public static void main(String[] args) throws Exception {
-        // driftDetection();
+         driftDetection();
         // compress();
-        test();
     }
 
 }

@@ -130,7 +130,7 @@ public class CodeTable {
 
     private static final double log2 = Math.log(2);
 
-    public static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
+    private static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                           List<String> items,
                                           int minFrequency,
                                           List<ImmutableSet<String>> outputSingletons,
@@ -175,9 +175,9 @@ public class CodeTable {
         });
     }
 
-    public static void findUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
-                                          List<ImmutableSet<String>> itemsets,
-                                          List<Integer> outputUsageCounts) {
+    private static void findUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
+                                           List<ImmutableSet<String>> itemsets,
+                                           List<Integer> outputUsageCounts) {
         if (outputUsageCounts == null) {
             throw new IllegalArgumentException("Output arguments cannot be null.");
         }
@@ -209,10 +209,10 @@ public class CodeTable {
         }
     }
 
-    public static void updateUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
-                                            List<ImmutableSet<String>> itemsets,
-                                            int newItemsetIndex,
-                                            List<Integer> inputOutputUsageCounts) {
+    private static void updateUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
+                                             List<ImmutableSet<String>> itemsets,
+                                             int newItemsetIndex,
+                                             List<Integer> inputOutputUsageCounts) {
         // TODO: Implement this.
         ImmutableSet<String> newItemset = itemsets.get(newItemsetIndex);
 
@@ -260,7 +260,7 @@ public class CodeTable {
     }
 
     public static double calculateOptimalCodeLengthsFor(List<Integer> usageCounts,
-                                                         List<Float> outputCodeLength) {
+                                                        List<Float> outputCodeLength) {
         if (outputCodeLength == null) {
             throw new IllegalArgumentException("Output arguments cannot be null.");
         }
