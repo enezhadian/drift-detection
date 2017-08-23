@@ -19,7 +19,6 @@
  */
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
@@ -62,7 +61,7 @@ public class Main {
         ItemsetStreamReader stream =
                 new ItemsetStreamReader(inputFilePath, delimiterRegex, items(0, numItems));
         ImmutableList<ImmutableSet<String>> head = stream.head(1000);
-        CodeTable codeTable = CodeTable.optimalFor(head, items, minFreq);
+        CodeTable.optimalFor(head, items, minFreq);
     }
 
     public static void main(String[] args) throws Exception {

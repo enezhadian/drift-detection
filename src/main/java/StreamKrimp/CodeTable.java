@@ -66,13 +66,7 @@ public class CodeTable {
         List temp;
         int insertionIndex = 0;
         for (ImmutableSet<String> itemset : candidates) {
-            // TODO: Use the fastest data structure for frequent insertion and deletion in the middle.
             itemsets.add(insertionIndex, itemset);
-
-            // System.out.println("======================================");
-            // for (ImmutableSet<String> is : itemsets) {
-            //     System.out.println(String.join(" ", is));
-            // }
 
             // copy previous usage counts to `candidateUsageCounts`.
             candidateUsageCounts.clear();
@@ -82,21 +76,12 @@ public class CodeTable {
             updateUsageCountsFor(streamSlice, itemsets, insertionIndex, candidateUsageCounts);
             lengthWithItemset = calculateOptimalCodeLengthsFor(candidateUsageCounts, candidateCodeLengths);
 
-
-            // System.out.print("Length with itemset " + Arrays.toString(itemset.toArray()) + ": " +
-            //         lengthWithItemset);
-
-            if (lengthWithItemset == currentLength) {
-                // System.out.println("=> === EQUAL ===");
-                // Remove the itemset as it doesn't seem to contribute to the compression.
-                itemsets.remove(insertionIndex);
-            } else if (lengthWithItemset > currentLength) {
-                // System.out.println("=> --- IGNORED ---");
+            // FIXME: This does not take code table length into account.
+            if (lengthWithItemset >= currentLength) {
                 // Remove the itemset as it doesn't seem to contribute to the compression.
                 itemsets.remove(insertionIndex);
 
             } else {
-                // System.out.println("=> +++ ADDED +++");
                 // Store usage counts, but also use already allocated space for future computations.
                 temp = usageCounts;
                 usageCounts = candidateUsageCounts;
@@ -187,25 +172,9 @@ public class CodeTable {
             outputUsageCounts.add(0);
         }
 
-        SetView<String> residue;
-        ImmutableSet<String> itemset;
         for (ImmutableSet<String> transaction : streamSlice) {
             // TODO: Find a better way to create a `SetView`.
-            residue = Sets.intersection(transaction, transaction);
-
-            for (int i = 0; i < itemsets.size(); i++) {
-                itemset = itemsets.get(i);
-
-                if (residue.containsAll(itemset)) {
-                    outputUsageCounts.set(i, outputUsageCounts.get(i) + 1);
-
-                    if (itemset.size() == residue.size()) {
-                        break;
-                    } else {
-                        residue = Sets.difference(residue, itemset);
-                    }
-                }
-            }
+            cover(transaction, itemsets, outputUsageCounts);
         }
     }
 
@@ -213,14 +182,13 @@ public class CodeTable {
                                              List<ImmutableSet<String>> itemsets,
                                              int newItemsetIndex,
                                              List<Integer> inputOutputUsageCounts) {
-        // TODO: Implement this.
         ImmutableSet<String> newItemset = itemsets.get(newItemsetIndex);
 
         SetView<String> residue;
         ImmutableSet<String> itemset;
         for (ImmutableSet<String> transaction : streamSlice) {
             if (transaction.containsAll(newItemset)) {
-                // Uncount previous usages for this transaction.
+                // Uncover previous usages for this transaction.
                 residue = Sets.intersection(transaction, transaction);
 
                 for (int i = 0; i < itemsets.size(); i++) {
@@ -240,27 +208,35 @@ public class CodeTable {
                 }
 
                 // Cover the transaction with new itemsets.
-                residue = Sets.intersection(transaction, transaction);
+                cover(transaction, itemsets, inputOutputUsageCounts);
+            }
+        }
+    }
 
-                for (int i = 0; i < itemsets.size(); i++) {
-                    itemset = itemsets.get(i);
+    private static void cover(ImmutableSet<String> transaction,
+                              List<ImmutableSet<String>> itemsets,
+                              List<Integer> inputOutputUsageCounts) {
+        // TODO: Find a better way to create a `SetView`.
+        SetView<String> residue = Sets.intersection(transaction, transaction);
+        ImmutableSet<String> itemset;
 
-                    if (residue.containsAll(itemset)) {
-                        inputOutputUsageCounts.set(i, inputOutputUsageCounts.get(i) + 1);
+        for (int i = 0; i < itemsets.size(); i++) {
+            itemset = itemsets.get(i);
 
-                        if (itemset.size() == residue.size()) {
-                            break;
-                        } else {
-                            residue = Sets.difference(residue, itemset);
-                        }
-                    }
+            if (residue.containsAll(itemset)) {
+                inputOutputUsageCounts.set(i, inputOutputUsageCounts.get(i) + 1);
+
+                if (itemset.size() == residue.size()) {
+                    break;
+                } else {
+                    residue = Sets.difference(residue, itemset);
                 }
             }
         }
     }
 
-    public static double calculateOptimalCodeLengthsFor(List<Integer> usageCounts,
-                                                        List<Float> outputCodeLength) {
+    private static double calculateOptimalCodeLengthsFor(List<Integer> usageCounts,
+                                                         List<Float> outputCodeLength) {
         if (outputCodeLength == null) {
             throw new IllegalArgumentException("Output arguments cannot be null.");
         }

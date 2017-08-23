@@ -104,7 +104,7 @@ public class ItemsetStreamReader {
                 headBuilder.add(setBuilder.build());
             }
         } catch (IOException e) {
-            // Simply continue as there is no more transactions to read.
+            // Simply continue as there are no more transactions to be read.
         }
 
         head = headBuilder.build();
@@ -115,12 +115,14 @@ public class ItemsetStreamReader {
     }
 
     private void skipLines(int maxSize) {
-        System.out.println("Doing something which is not supposed to happen: " + maxSize);
+        System.out.println("Skipping " + maxSize + " lines without processing.");
         try {
             // Skip `maxSize` lines from input file.
-            for (int size = 0; size < maxSize && reader.readLine() != null; size++) { read++; }
+            for (int size = 0; size < maxSize && reader.readLine() != null; size++) {
+                read++;
+            }
         } catch (IOException e) {
-            // Simply continue as there is no more transactions to read.
+            // Simply continue as there are no more transactions to be read.
         }
     }
 
