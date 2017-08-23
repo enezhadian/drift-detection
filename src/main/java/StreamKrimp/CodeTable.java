@@ -63,7 +63,7 @@ public class CodeTable {
                 ImmutableList.<Float>builder().addAll(codeLengths).build(),
                 0);
 
-        List<Float> temp;
+        List temp;
         int insertionIndex = 0;
         for (ImmutableSet<String> itemset : candidates) {
             // TODO: Use the fastest data structure for frequent insertion and deletion in the middle.
@@ -74,10 +74,10 @@ public class CodeTable {
             //     System.out.println(String.join(" ", is));
             // }
 
-            // copy previous code lengths to `candidateCodeLengths`.
-            candidateCodeLengths.clear();
-            candidateCodeLengths.addAll(codeLengths);
-            candidateCodeLengths.add(insertionIndex, (float) 0);
+            // copy previous usage counts to `candidateUsageCounts`.
+            candidateUsageCounts.clear();
+            candidateUsageCounts.addAll(usageCounts);
+            candidateUsageCounts.add(insertionIndex, 0);
 
             updateUsageCountsFor(streamSlice, itemsets, insertionIndex, candidateUsageCounts);
             lengthWithItemset = calculateOptimalCodeLengthsFor(candidateUsageCounts, candidateCodeLengths);
@@ -90,14 +90,18 @@ public class CodeTable {
                 // System.out.println("=> === EQUAL ===");
                 // Remove the itemset as it doesn't seem to contribute to the compression.
                 itemsets.remove(insertionIndex);
-            }
-            else if (lengthWithItemset > currentLength) {
+            } else if (lengthWithItemset > currentLength) {
                 // System.out.println("=> --- IGNORED ---");
                 // Remove the itemset as it doesn't seem to contribute to the compression.
                 itemsets.remove(insertionIndex);
 
             } else {
                 // System.out.println("=> +++ ADDED +++");
+                // Store usage counts, but also use already allocated space for future computations.
+                temp = usageCounts;
+                usageCounts = candidateUsageCounts;
+                candidateUsageCounts = temp;
+
                 // Store code lengths, but also use already allocated space for future computations.
                 temp = codeLengths;
                 codeLengths = candidateCodeLengths;
@@ -236,22 +240,18 @@ public class CodeTable {
                 }
 
                 // Cover the transaction with new itemsets.
-                inputOutputUsageCounts.set(newItemsetIndex,
-                    inputOutputUsageCounts.get(newItemsetIndex) + 1);
-                residue = Sets.difference(transaction, newItemset);
+                residue = Sets.intersection(transaction, transaction);
 
                 for (int i = 0; i < itemsets.size(); i++) {
-                    if (i != newItemsetIndex) {
-                        itemset = itemsets.get(i);
+                    itemset = itemsets.get(i);
 
-                        if (residue.containsAll(itemset)) {
-                            inputOutputUsageCounts.set(i, inputOutputUsageCounts.get(i) + 1);
+                    if (residue.containsAll(itemset)) {
+                        inputOutputUsageCounts.set(i, inputOutputUsageCounts.get(i) + 1);
 
-                            if (itemset.size() == residue.size()) {
-                                break;
-                            } else {
-                                residue = Sets.difference(residue, itemset);
-                            }
+                        if (itemset.size() == residue.size()) {
+                            break;
+                        } else {
+                            residue = Sets.difference(residue, itemset);
                         }
                     }
                 }
@@ -266,21 +266,24 @@ public class CodeTable {
         }
 
         // Calculate total usage count.
-        int totalUsage = 0;
-        for (int usage : usageCounts) {
+        double totalUsage = 0;
+        for (double usage : usageCounts) {
             totalUsage += usage;
         }
 
         // Calculate optimal code lengths and total cover size.
-        float usage, codeLength;
+        float codeLength;
         double sliceLength = 0;
-        for (int i = 0; i < usageCounts.size(); i++) {
-            usage = usageCounts.get(i);
+
+        outputCodeLength.clear();
+        for (double usage : usageCounts) {
             if (usage > 0) {
                 codeLength = (float)(-Math.log(usage / totalUsage) / log2);
                 sliceLength += usage * codeLength;
-                outputCodeLength.set(i, codeLength);
+            } else {
+                codeLength = 0;
             }
+            outputCodeLength.add(codeLength);
         }
 
         return sliceLength;
