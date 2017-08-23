@@ -28,6 +28,7 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
 
+// FIXME: Length names are messy. Come up with a uniform naming for them.
 public class CodeTable {
 
     /*--------------------------------------------------------------------------*
@@ -37,6 +38,7 @@ public class CodeTable {
     public static CodeTable optimalFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                        List<String> items,
                                        int minFrequency) {
+        // TODO: Tidy up this method.
         // These three lists are used as to get results from `findOptimalCodeLengthsFor`.
         List<ImmutableSet<String>> itemsets = new ArrayList<>();
         List<ImmutableSet<String>> candidates = new ArrayList<>();
@@ -69,8 +71,13 @@ public class CodeTable {
             //     System.out.println(String.join(" ", is));
             // }
 
-            lengthWithItemset = findOptimalCodeLengthsFor(streamSlice,
-                    itemsets, candidateCodeLengths);
+            // copy previous code lengths to `candidateCodeLengths`.
+            candidateCodeLengths.clear();
+            candidateCodeLengths.addAll(codeLengths);
+            candidateCodeLengths.add(insertionIndex, (float) 0);
+
+            lengthWithItemset = findOptimalCodeLengthsFor(streamSlice, itemsets, insertionIndex,
+                    currentLength, candidateCodeLengths);
 
             // System.out.print("Length with itemset " + Arrays.toString(itemset.toArray()) + ": " +
             //         lengthWithItemset);
@@ -203,17 +210,26 @@ public class CodeTable {
         }
 
         float usage, codeLength;
-        double compressedLength = 0; // Sum of code lengths of covers of transactions.
+        double sliceLength = 0; // Sum of code lengths of covers of transactions.
         for (int i = 0; i < outputCodeLengths.size(); i++) {
             usage = outputCodeLengths.get(i);
             if (usage > 0) {
                 codeLength = (float)(-Math.log(usage / totalUsage) / log2);
-                compressedLength += usage * codeLength;
+                sliceLength += usage * codeLength;
                 outputCodeLengths.set(i, codeLength);
             }
         }
 
-        return compressedLength;
+        return sliceLength;
+    }
+
+    private static double findOptimalCodeLengthsFor(ImmutableList<ImmutableSet<String>> streamSlice,
+                                                    List<ImmutableSet<String>> itemsets,
+                                                    int newItemsetIndex,
+                                                    double optimalLengthWithoutNewItemset,
+                                                    List<Float> inputOutputCodeLengths) {
+        // TODO: Implement this.
+        return 0;
     }
 
     /*--------------------------------------------------------------------------*
