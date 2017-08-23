@@ -62,6 +62,8 @@ public class DriftDetector {
             while (true) {
                 discardBlocksConformingTo(doSample);
 
+                int lastRowOfCurrentCodeTable = stream.read;
+
                 findCodeTable();
                 double len = currentCodeTable.totalLengthOf(convergedHead);
                 double newLen = convergedCodeTable.totalLengthOf(convergedHead);
@@ -69,20 +71,21 @@ public class DriftDetector {
 
                 if (difference >= minCodeTableDifference) {
                     // TODO: Report concept drift in more useful way.
-                    System.out.println("\033[1;32m*** DIFF: "  + difference + " ***\033[0m");
+                    System.out.print("\033[1;32m*** DIFF: "  + difference);
                     currentCodeTable = convergedCodeTable;
                     stream.discard(convergedHead.size());
                     doSample = true;
                 } else {
                     if (difference < 0) {
-                        System.out.println("\033[1;31m*** DIFF: " + difference + " ***\033[0m");
+                        System.out.print("\033[1;31m*** DIFF: " + difference);
                     } else {
-                        System.out.println("\033[1;33m*** DIFF: " + difference + " ***\033[0m");
+                        System.out.print("\033[1;33m*** DIFF: " + difference);
                     }
 
                     stream.discard(blockSize);
                     doSample = false;
                 }
+                System.out.println(" *** ROW: " + lastRowOfCurrentCodeTable + " ***\033[0m");
             }
         } catch (NoSuchElementException e) {
             System.out.println("Done.");
@@ -112,17 +115,19 @@ public class DriftDetector {
         convergedHead = stream.head(sliceSize);
         convergedCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minFrequency);
 
+        ImmutableList<ImmutableSet<String>> newHead;
         CodeTable newCodeTable;
         double ir, len, newLen;
         do {
             sliceSize += blockSize;
-            convergedHead = stream.head(sliceSize);
-            newCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minFrequency);
+            newHead = stream.head(sliceSize);
+            newCodeTable = CodeTable.optimalFor(newHead, stream.items(), minFrequency);
 
             len = convergedCodeTable.totalLengthOf(convergedHead);
             newLen = newCodeTable.totalLengthOf(convergedHead);
             ir = Math.abs(len - newLen) / len;
 
+            convergedHead = newHead;
             convergedCodeTable = newCodeTable;
         } while (ir > maxImprovementRate);
     }

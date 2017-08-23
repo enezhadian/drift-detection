@@ -62,6 +62,12 @@ public class CodeTable {
         for (ImmutableSet<String> itemset : candidates) {
             // TODO: Use the fastest data structure for frequent insertion and deletion in the middle.
             itemsets.add(insertionIndex, itemset);
+
+            // System.out.println("======================================");
+            // for (ImmutableSet<String> is : itemsets) {
+            //     System.out.println(String.join(" ", is));
+            // }
+
             lengthWithItemset = findOptimalCodeLengthsFor(streamSlice,
                     itemsets, candidateCodeLengths);
 
@@ -101,8 +107,8 @@ public class CodeTable {
             length += standardCodeTable.coverLengthOf(codeTableItemsets.get(i));
             length += codeTableCodeLengths.get(i);
         }
+        System.out.println("Best length found: " + currentLength);
 
-        System.out.println("Minimum length: " + currentLength);
         CodeTable codeTable = new CodeTable(codeTableItemsets, codeTableCodeLengths, length);
         return codeTable;
     }
@@ -121,8 +127,8 @@ public class CodeTable {
     private static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                           List<String> items,
                                           int minFrequency,
-                                          List<ImmutableSet<String>> singletons,
-                                          List<ImmutableSet<String>> candidates) {
+                                          List<ImmutableSet<String>> outputSingletons,
+                                          List<ImmutableSet<String>> outputCandidates) {
         String input = "tmp/input";
         String output = "tmp/output";
         try {
@@ -136,12 +142,12 @@ public class CodeTable {
             AlgoAprioriClose apriori = new AlgoAprioriClose();
             apriori.runAlgorithm(minSupport, input, output);
 
-            candidates.clear();
+            outputCandidates.clear();
             BufferedReader reader = new BufferedReader(new InputStreamReader(
                     new FileInputStream(output)));
             String line;
             String[] parts, is;
-            Map<ImmutableSet<String>, Integer> candidatesMap = new HashMap<>();
+            Map<ImmutableSet<String>, Integer> frequenciesMap = new HashMap<>();
             while ((line = reader.readLine()) != null) {
                 parts = line.split("\\s+#SUP:\\s+");
                 is = parts[0].split("\\s+");
@@ -151,26 +157,35 @@ public class CodeTable {
                     for (String item : is) {
                         setBuilder.add(item);
                     }
-                    candidatesMap.put(setBuilder.build(), Integer.parseInt(parts[1]));
+                    frequenciesMap.put(setBuilder.build(), Integer.parseInt(parts[1]));
+                } else {
+                    frequenciesMap.put(ImmutableSet.<String>builder().add(is[0]).build(),
+                            Integer.parseInt(parts[1]));
                 }
             }
-            candidates.addAll(candidatesMap.keySet());
-            candidates.sort((ImmutableSet<String> x, ImmutableSet<String> y) -> {
+            outputCandidates.addAll(frequenciesMap.keySet());
+            outputCandidates.sort((ImmutableSet<String> x, ImmutableSet<String> y) -> {
                 int xSize = x.size();
                 int ySize = y.size();
                 if (xSize == ySize) {
-                    int xFreq = candidatesMap.get(x);
-                    int yFreq = candidatesMap.get(y);
+                    int xFreq = frequenciesMap.get(x);
+                    int yFreq = frequenciesMap.get(y);
                     return yFreq - xFreq;
                 } else {
                     return ySize - xSize;
                 }
             });
 
-            singletons.clear();
+            outputSingletons.clear();
             for (String item : items) {
-                singletons.add(ImmutableSet.<String>builder().add(item).build());
+                outputSingletons.add(ImmutableSet.<String>builder().add(item).build());
             }
+            // This is actually not needed.
+            outputSingletons.sort((ImmutableSet<String> x, ImmutableSet<String> y) -> {
+                int xFreq = frequenciesMap.getOrDefault(x, 0);
+                int yFreq = frequenciesMap.getOrDefault(y, 0);
+                return yFreq - xFreq;
+            });
 
             reader.close();
         } catch (IOException e) {
@@ -180,16 +195,16 @@ public class CodeTable {
 
     private static double findOptimalCodeLengthsFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                                     List<ImmutableSet<String>> itemsets,
-                                                    List<Float> codeLengths) {
+                                                    List<Float> outputCodeLengths) {
         // TODO: Make this method faster.
         // Calculate the usage of each itemset and store them in `codeLengths`.
-        if (codeLengths == null) {
-            codeLengths = new ArrayList<>(itemsets.size());
+        if (outputCodeLengths == null) {
+            outputCodeLengths = new ArrayList<>(itemsets.size());
         }
 
-        codeLengths.clear();
+        outputCodeLengths.clear();
         for (int i = 0; i < itemsets.size(); i++) {
-            codeLengths.add(0f);
+            outputCodeLengths.add(0f);
         }
 
         SetView<String> residue;
@@ -202,7 +217,7 @@ public class CodeTable {
                 itemset = itemsets.get(i);
 
                 if (residue.containsAll(itemset)) {
-                    codeLengths.set(i, codeLengths.get(i) + 1);
+                    outputCodeLengths.set(i, outputCodeLengths.get(i) + 1);
 
                     if (itemset.size() == residue.size()) {
                         break;
@@ -215,18 +230,18 @@ public class CodeTable {
 
         // Calculate compressed length of stream slice.
         float totalUsage = 0;
-        for (float usage : codeLengths) {
+        for (float usage : outputCodeLengths) {
             totalUsage += usage;
         }
 
         float usage, codeLength;
         double compressedLength = 0; // Sum of code lengths of covers of transactions.
-        for (int i = 0; i < codeLengths.size(); i++) {
-            usage = codeLengths.get(i);
+        for (int i = 0; i < outputCodeLengths.size(); i++) {
+            usage = outputCodeLengths.get(i);
             if (usage > 0) {
                 codeLength = (float)(-Math.log(usage / totalUsage) / log2);
                 compressedLength += usage * codeLength;
-                codeLengths.set(i, codeLength);
+                outputCodeLengths.set(i, codeLength);
             }
         }
 
