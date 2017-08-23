@@ -30,6 +30,11 @@ import ca.pfv.spmf.algorithms.frequentpatterns.apriori_close.AlgoAprioriClose;
 
 
 class FrequentItemsetMiner {
+
+    /*--------------------------------------------------------------------------*
+     *                        STATIC MEMBERS AND METHODS                        *
+     *--------------------------------------------------------------------------*/
+
     public static void run(ImmutableList<ImmutableSet<String>> database,
                            List<String> items,
                            int minFrequency,
@@ -83,9 +88,12 @@ class FrequentItemsetMiner {
         }
     }
 
-
     private static final String inputDatabaseFilePath = "tmp/input_database";
     private static final String outputItemsetsFilePath = "tmp/output_itemsets";
+
+    /*--------------------------------------------------------------------------*
+     *                       INSTANCE MEMBERS AND METHODS                       *
+     *--------------------------------------------------------------------------*/
 
     // Make the class non-instantiatable.
     private FrequentItemsetMiner() {};

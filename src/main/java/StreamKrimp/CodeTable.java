@@ -30,6 +30,10 @@ import com.google.common.collect.Sets.SetView;
 
 public class CodeTable {
 
+    /*--------------------------------------------------------------------------*
+     *                        STATIC MEMBERS AND METHODS                        *
+     *--------------------------------------------------------------------------*/
+
     public static CodeTable optimalFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                        List<String> items,
                                        int minFrequency) {
@@ -110,16 +114,7 @@ public class CodeTable {
         return codeTable;
     }
 
-    public double totalLengthOf(ImmutableList<ImmutableSet<String>> streamSlice) {
-        return length() + lengthOf(streamSlice);
-    }
-
-
     private static final double log2 = Math.log(2);
-
-    private final ImmutableList<ImmutableSet<String>> itemsets;
-    private final ImmutableList<Float> codeLengths;
-    private final double length;
 
     private static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                           List<String> items,
@@ -220,6 +215,18 @@ public class CodeTable {
 
         return compressedLength;
     }
+
+    /*--------------------------------------------------------------------------*
+     *                       INSTANCE MEMBERS AND METHODS                       *
+     *--------------------------------------------------------------------------*/
+
+    public double totalLengthOf(ImmutableList<ImmutableSet<String>> streamSlice) {
+        return length() + lengthOf(streamSlice);
+    }
+
+    private final ImmutableList<ImmutableSet<String>> itemsets;
+    private final ImmutableList<Float> codeLengths;
+    private final double length;
 
     private CodeTable(ImmutableList<ImmutableSet<String>> itemsets,
                       ImmutableList<Float> codeLengths,

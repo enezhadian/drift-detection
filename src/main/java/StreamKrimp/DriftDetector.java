@@ -32,6 +32,10 @@ import DataStreamReader.ItemsetStreamReader;
 
 public class DriftDetector {
 
+    /*--------------------------------------------------------------------------*
+     *                       INSTANCE MEMBERS AND METHODS                       *
+     *--------------------------------------------------------------------------*/
+
     public DriftDetector(ItemsetStreamReader stream, int blockSize, int minFrequency,
                          double maxImprovementRate, double minCodeTableDifference,
                          int numSamples, double nSigma) throws IllegalArgumentException {
@@ -91,7 +95,6 @@ public class DriftDetector {
             System.out.println("Done.");
         }
     }
-
 
     private final ItemsetStreamReader stream;
     private final int blockSize;
