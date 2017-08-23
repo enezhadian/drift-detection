@@ -66,6 +66,8 @@ public class DriftDetector {
             while (true) {
                 discardBlocksConformingTo(doSample);
 
+                System.out.println("------------new concept------------");
+
                 int lastRowOfCurrentCodeTable = stream.read;
 
                 findCodeTable();
@@ -77,7 +79,9 @@ public class DriftDetector {
                     // TODO: Report concept drift in more useful way.
                     System.out.print("\033[1;32m*** DIFF: "  + difference);
                     currentCodeTable = convergedCodeTable;
+                    System.out.println("[1");
                     stream.discard(convergedHead.size());
+                    System.out.println("1]");
                     doSample = true;
                 } else {
                     if (difference < 0) {
@@ -86,10 +90,13 @@ public class DriftDetector {
                         System.out.print("\033[1;33m*** DIFF: " + difference);
                     }
 
+                    System.out.println("[2");
                     stream.discard(blockSize);
+                    System.out.println("2]");
                     doSample = false;
                 }
-                System.out.println(" *** ROW: " + lastRowOfCurrentCodeTable + " ***\033[0m");
+                // System.out.println(" *** ROW: " + lastRowOfCurrentCodeTable + " ***\033[0m");
+                System.out.println(" *** ROW: " + convergedHead.size() + " ***\033[0m");
             }
         } catch (NoSuchElementException e) {
             System.out.println("Done.");
@@ -153,7 +160,9 @@ public class DriftDetector {
             blockLength = convergedCodeTable.totalLengthOf(block);
             if (minLength <= blockLength && blockLength <= maxLength) {
                 System.out.println("Skipping a block.");
+                System.out.println("[3");
                 stream.discard(blockSize);
+                System.out.println("3]");
             } else {
                 break;
             }

@@ -19,6 +19,7 @@
  */
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
@@ -31,12 +32,12 @@ import StreamKrimp.DriftDetector;
 
 public class Main {
 
-    static final String inputFilePath = "data/chessBig.txt";
+    static final String inputFilePath = "data/wine.txt";
     static final String delimiterRegex = "\\s";
-    static final int numItems = 58;
+    static final int numItems = 68;
     static final List<String> items = items(0, numItems);
     static final int blockSize = numItems;
-    static final int minFreq = 10;
+    static final int minFreq = 5;
     static final double maxIR = 0.02;
     static final double minCTD = 0.1;
     static final int numSamples = 100;
@@ -60,13 +61,53 @@ public class Main {
     public static void compress() throws Exception {
         ItemsetStreamReader stream =
                 new ItemsetStreamReader(inputFilePath, delimiterRegex, items(0, numItems));
-        ImmutableList<ImmutableSet<String>> head = stream.head(20000);
+        ImmutableList<ImmutableSet<String>> head = stream.head(1000);
         CodeTable codeTable = CodeTable.optimalFor(head, items, minFreq);
     }
 
+    public static void test() throws Exception {
+        ItemsetStreamReader stream =
+                new ItemsetStreamReader(inputFilePath, delimiterRegex, items(0, numItems));
+        ImmutableList<ImmutableSet<String>> head = stream.head(1000);
+
+        List<ImmutableSet<String>> itemsets = new ArrayList<>();
+        List<ImmutableSet<String>> candidates = new ArrayList<>();
+        List<Integer> usageCounts1 = new ArrayList<>();
+        List<Integer> usageCounts2 = new ArrayList<>();
+
+        CodeTable.findCandidatesFor(head, items, minFreq, itemsets, candidates);
+        CodeTable.findUsageCountsFor(head, itemsets, usageCounts1);
+
+        System.out.println(candidates.size());
+
+        List temp;
+        int insertionIndex = 0;
+        for (ImmutableSet<String> itemset : candidates) {
+            // TODO: Use the fastest data structure for frequent insertion and deletion in the middle.
+            itemsets.add(insertionIndex, itemset);
+
+            usageCounts2.clear();
+            usageCounts2.addAll(usageCounts1);
+            usageCounts2.add(insertionIndex, 0);
+
+            CodeTable.updateUsageCountsFor(head, itemsets, insertionIndex, usageCounts2);
+            CodeTable.findUsageCountsFor(head, itemsets, usageCounts1);
+
+            if (!Arrays.equals(usageCounts1.toArray(), usageCounts2.toArray())) {
+                System.out.println("Wrong!");
+                break;
+            }
+
+            insertionIndex++;
+
+        }
+
+    }
+
     public static void main(String[] args) throws Exception {
-        driftDetection();
+        // driftDetection();
         // compress();
+        test();
     }
 
 }

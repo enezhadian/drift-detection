@@ -130,7 +130,7 @@ public class CodeTable {
 
     private static final double log2 = Math.log(2);
 
-    private static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
+    public static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                           List<String> items,
                                           int minFrequency,
                                           List<ImmutableSet<String>> outputSingletons,
@@ -175,7 +175,7 @@ public class CodeTable {
         });
     }
 
-    private static void findUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
+    public static void findUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                           List<ImmutableSet<String>> itemsets,
                                           List<Integer> outputUsageCounts) {
         if (outputUsageCounts == null) {
@@ -209,7 +209,7 @@ public class CodeTable {
         }
     }
 
-    private static void updateUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
+    public static void updateUsageCountsFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                             List<ImmutableSet<String>> itemsets,
                                             int newItemsetIndex,
                                             List<Integer> inputOutputUsageCounts) {
@@ -259,7 +259,7 @@ public class CodeTable {
         }
     }
 
-    private static double calculateOptimalCodeLengthsFor(List<Integer> usageCounts,
+    public static double calculateOptimalCodeLengthsFor(List<Integer> usageCounts,
                                                          List<Float> outputCodeLength) {
         if (outputCodeLength == null) {
             throw new IllegalArgumentException("Output arguments cannot be null.");

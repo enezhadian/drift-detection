@@ -115,7 +115,7 @@ public class ItemsetStreamReader {
     }
 
     private void skipLines(int maxSize) {
-        System.out.println("Doing something which is not supposed to happen.");
+        System.out.println("Doing something which is not supposed to happen: " + maxSize);
         try {
             // Skip `maxSize` lines from input file.
             for (int size = 0; size < maxSize && reader.readLine() != null; size++) { read++; }
