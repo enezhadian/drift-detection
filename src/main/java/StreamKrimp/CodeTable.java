@@ -20,15 +20,12 @@
 
 package StreamKrimp;
 
-import java.io.*;
 import java.util.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
-
-import ca.pfv.spmf.algorithms.frequentpatterns.apriori_close.AlgoAprioriClose;
 
 
 public class CodeTable {
@@ -129,68 +126,44 @@ public class CodeTable {
                                           int minFrequency,
                                           List<ImmutableSet<String>> outputSingletons,
                                           List<ImmutableSet<String>> outputCandidates) {
-        String input = "tmp/input";
-        String output = "tmp/output";
-        try {
-            PrintWriter writer = new PrintWriter(input, "UTF-8");
-            for (ImmutableSet<String> transaction : streamSlice) {
-                writer.println(String.join(" ", transaction.asList()));
-            }
-            writer.close();
-
-            double minSupport = (double) minFrequency / streamSlice.size();
-            AlgoAprioriClose apriori = new AlgoAprioriClose();
-            apriori.runAlgorithm(minSupport, input, output);
-
-            outputCandidates.clear();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    new FileInputStream(output)));
-            String line;
-            String[] parts, is;
-            Map<ImmutableSet<String>, Integer> frequenciesMap = new HashMap<>();
-            while ((line = reader.readLine()) != null) {
-                parts = line.split("\\s+#SUP:\\s+");
-                is = parts[0].split("\\s+");
-
-                if (is.length > 1) {
-                    ImmutableSet.Builder<String> setBuilder = ImmutableSet.builder();
-                    for (String item : is) {
-                        setBuilder.add(item);
-                    }
-                    frequenciesMap.put(setBuilder.build(), Integer.parseInt(parts[1]));
-                } else {
-                    frequenciesMap.put(ImmutableSet.<String>builder().add(is[0]).build(),
-                            Integer.parseInt(parts[1]));
-                }
-            }
-            outputCandidates.addAll(frequenciesMap.keySet());
-            outputCandidates.sort((ImmutableSet<String> x, ImmutableSet<String> y) -> {
-                int xSize = x.size();
-                int ySize = y.size();
-                if (xSize == ySize) {
-                    int xFreq = frequenciesMap.get(x);
-                    int yFreq = frequenciesMap.get(y);
-                    return yFreq - xFreq;
-                } else {
-                    return ySize - xSize;
-                }
-            });
-
-            outputSingletons.clear();
-            for (String item : items) {
-                outputSingletons.add(ImmutableSet.<String>builder().add(item).build());
-            }
-            // This is actually not needed.
-            outputSingletons.sort((ImmutableSet<String> x, ImmutableSet<String> y) -> {
-                int xFreq = frequenciesMap.getOrDefault(x, 0);
-                int yFreq = frequenciesMap.getOrDefault(y, 0);
-                return yFreq - xFreq;
-            });
-
-            reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (outputSingletons == null || outputCandidates == null) {
+            throw new IllegalArgumentException("Output arguments cannot be null.");
         }
+
+        Map<ImmutableSet<String>, Integer> itemsetsWithFrequencies = new HashMap<>();
+        FrequentItemsetMiner.run(streamSlice, items, minFrequency, itemsetsWithFrequencies);
+
+        // Populate `outputSingletons` with singletons.
+        outputSingletons.clear();
+        for (String item : items) {
+            outputSingletons.add(ImmutableSet.<String>builder().add(item).build());
+        }
+        // Sort `outputSingletons`. TODO: This is actually not needed.
+        outputSingletons.sort((ImmutableSet<String> x, ImmutableSet<String> y) -> {
+            int xFreq = itemsetsWithFrequencies.getOrDefault(x, 0);
+            int yFreq = itemsetsWithFrequencies.getOrDefault(y, 0);
+            return yFreq - xFreq;
+        });
+
+        // Populate `outputCandidates` with non-singleton frequent itemsets.
+        outputCandidates.clear();
+        for (ImmutableSet<String> itemset : itemsetsWithFrequencies.keySet()) {
+            if (itemset.size() > 1) {
+                outputCandidates.add(itemset);
+            }
+        }
+        // Sort `outputCandidates`.
+        outputCandidates.sort((ImmutableSet<String> x, ImmutableSet<String> y) -> {
+            int xSize = x.size();
+            int ySize = y.size();
+            if (xSize == ySize) {
+                int xFreq = itemsetsWithFrequencies.get(x);
+                int yFreq = itemsetsWithFrequencies.get(y);
+                return yFreq - xFreq;
+            } else {
+                return ySize - xSize;
+            }
+        });
     }
 
     private static double findOptimalCodeLengthsFor(ImmutableList<ImmutableSet<String>> streamSlice,
