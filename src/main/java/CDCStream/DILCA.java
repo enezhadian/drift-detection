@@ -21,13 +21,51 @@
 package CDCStream;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 class DILCA {
 
     public static DILCAMatrix distanceMatrixFor(ImmutableList<ImmutableList<String>> database,
                                                 int targetAttributeIndex) {
+        // Find value domain for target attribute.
+        ImmutableSet.Builder<String> domainBuilder = ImmutableSet.builder();
+        for (ImmutableList<String> record : database) {
+            domainBuilder.add(record.get(targetAttributeIndex));
+        }
+        ImmutableSet<String> domain = domainBuilder.build();
+
+        // Find context attributes.
+        int[] contextAttributeIndexes = contextAttributeIndexesFor(database, targetAttributeIndex);
+
+        // Build distance matrix.
+        DILCAMatrix distanceMatrix = new DILCAMatrix(domain);
+        double distance;
+        for (String firstValue : domain) {
+            for (String secondValue : domain) {
+                if (firstValue.compareTo(secondValue) < 0) {
+                    distance = distanceFor(database, targetAttributeIndex, contextAttributeIndexes,
+                            firstValue, secondValue);
+                    distanceMatrix.set(firstValue, secondValue, distance);
+                }
+            }
+        }
+
+        return distanceMatrix;
+    }
+
+    private static int[] contextAttributeIndexesFor(ImmutableList<ImmutableList<String>> database,
+                                                    int targetAttributeIndex) {
         // TODO: Implement this.
         return null;
+    }
+
+    private static double distanceFor(ImmutableList<ImmutableList<String>> database,
+                                      int targetAttributeIndex,
+                                      int[] contextAttributeIndexes,
+                                      String firstValue,
+                                      String secondValue) {
+        // TODO: Implement this.
+        return 0;
     }
 
     // Make `DILCA` non-instantiatable.
