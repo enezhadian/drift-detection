@@ -55,6 +55,17 @@ class DILCAMatrix {
         return valueMap.keySet();
     }
 
+    public double normalizedSquaredSum() {
+        double sum = 0, numValues = 0;
+        for (double[] row : distances) {
+            for (double value : row) {
+                sum += value * value;
+                numValues++;
+            }
+        }
+        return sum / numValues;
+    }
+
     public double get(String firstValue, String secondValue) {
         // Get indexes corresponding to given values.
         int firstIndex = valueMap.getOrDefault(firstValue, -1);

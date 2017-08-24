@@ -21,8 +21,10 @@
 package CDCStream;
 
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import DataStreamReader.CategoricalRecordStreamReader;
+import com.google.common.collect.ImmutableList;
 
 
 public class DriftDetector {
@@ -35,6 +37,22 @@ public class DriftDetector {
         } catch (NoSuchElementException e) {
             System.out.println("Done.");
         }
+    }
+
+    private double summaryOf(ImmutableList<ImmutableList<String>> block) {
+        if (block.size() == 0) {
+            throw new IllegalArgumentException("Block should not be empty.");
+        }
+
+        int numAttributes = block.get(0).size();
+
+        double summary = 0;
+        for (int attribute = 0; attribute < numAttributes; attribute++) {
+            summary += DILCA.distanceMatrixFor(block, attribute).normalizedSquaredSum();
+        }
+        summary /= numAttributes;
+
+        return summary;
     }
 
 }
