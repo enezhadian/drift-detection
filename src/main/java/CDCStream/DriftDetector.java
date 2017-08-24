@@ -17,7 +17,7 @@
  *  limitations under the License.
  *
  */
-
+g
 package CDCStream;
 
 import java.util.NoSuchElementException;
@@ -33,7 +33,9 @@ public class DriftDetector {
 
     public void run() {
         try {
-            while (true) {}
+            while (true) {
+                // TODO: Implement this.
+            }
         } catch (NoSuchElementException e) {
             System.out.println("Done.");
         }
