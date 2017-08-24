@@ -22,12 +22,12 @@ package CDCStream;
 
 import java.util.NoSuchElementException;
 
-import DataStreamReader.TabularStreamReader;
+import DataStreamReader.CategoricalRecordStreamReader;
 
 
 public class DriftDetector {
 
-    public DriftDetector(TabularStreamReader stream, int blockSize) {}
+    public DriftDetector(CategoricalRecordStreamReader stream, int blockSize) {}
 
     public void run() {
         try {

@@ -26,13 +26,13 @@ import java.util.NoSuchElementException;
 
 import com.google.common.collect.ImmutableList;
 
-import DataStreamReader.TabularStreamReader;
+import DataStreamReader.CategoricalRecordStreamReader;
 import com.google.common.collect.Sets;
 
 
 public class DriftDetector {
 
-    public DriftDetector(TabularStreamReader stream, int blockSize, double minChangeDegree) {
+    public DriftDetector(CategoricalRecordStreamReader stream, int blockSize, double minChangeDegree) {
         this.stream = stream;
         this.blockSize = blockSize;
         this.minChangeDegree = minChangeDegree;
@@ -69,7 +69,7 @@ public class DriftDetector {
         }
     }
 
-    private final TabularStreamReader stream;
+    private final CategoricalRecordStreamReader stream;
     private final int blockSize;
     private final double minChangeDegree;
 

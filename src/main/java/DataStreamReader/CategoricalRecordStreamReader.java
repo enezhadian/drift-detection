@@ -32,13 +32,13 @@ import org.apache.commons.csv.*;
 
 
 
-public final class TabularStreamReader extends DataStreamReader<ImmutableList<String>> {
+public final class CategoricalRecordStreamReader extends DataStreamReader<ImmutableList<String>> {
 
     /*--------------------------------------------------------------------------*
      *                       INSTANCE MEMBERS AND METHODS                       *
      *--------------------------------------------------------------------------*/
 
-    public TabularStreamReader(String path, boolean hasHeader) throws IOException {
+    public CategoricalRecordStreamReader(String path, boolean hasHeader) throws IOException {
         CSVParser parser = CSVParser.parse(new File(path), Charset.forName("UTF-8"), CSVFormat.RFC4180);
         this.records = parser.iterator();
 
