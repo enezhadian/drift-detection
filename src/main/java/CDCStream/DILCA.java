@@ -20,8 +20,12 @@
 
 package CDCStream;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+
 
 class DILCA {
 
@@ -59,12 +63,24 @@ class DILCA {
         return null;
     }
 
-    private static double distanceFor(ImmutableList<ImmutableList<String>> database,
-                                      int targetAttributeIndex,
-                                      int[] contextAttributeIndexes,
-                                      String firstValue,
-                                      String secondValue) {
+    private static double cooccurrencesFor(ImmutableList<ImmutableList<String>> database,
+                                           int targetAttributeIndex,
+                                           int contextAttributeIndex) {
         // TODO: Implement this.
+        Map<String, Map<String, Integer>> cooccurrencesMap = new HashMap<>();
+
+        String contextValue, targetValue;
+        Map<String, Integer> targetMap;
+        for (ImmutableList<String> record : database) {
+            contextValue = record.get(contextAttributeIndex);
+            targetValue = record.get(targetAttributeIndex);
+
+            // Increment co-occurrence count for context and target values.
+            targetMap = cooccurrencesMap.getOrDefault(contextValue, new HashMap<>());
+            targetMap.put(targetValue, targetMap.getOrDefault(targetValue, 0) + 1);
+            cooccurrencesMap.put(contextValue, targetMap);
+        }
+
         return 0;
     }
 

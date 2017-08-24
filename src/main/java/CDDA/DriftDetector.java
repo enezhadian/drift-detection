@@ -98,14 +98,14 @@ public class DriftDetector {
             secondEquivalents.clear();
 
             // Calculate size of each equivalent class for the first block.
-            for (ImmutableList<String> row : firstBlock) {
-                String value = row.get(attribute);
+            for (ImmutableList<String> record : firstBlock) {
+                String value = record.get(attribute);
                 firstEquivalents.put(value, firstEquivalents.getOrDefault(value, 0) + 1);
             }
 
             // Calculate size of each equivalent class for the second block.
-            for (ImmutableList<String> row : secondBlock) {
-                String value = row.get(attribute);
+            for (ImmutableList<String> record : secondBlock) {
+                String value = record.get(attribute);
                 secondEquivalents.put(value, secondEquivalents.getOrDefault(value, 0) + 1);
             }
 
