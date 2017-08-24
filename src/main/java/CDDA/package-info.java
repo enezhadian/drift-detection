@@ -1,5 +1,5 @@
 /*
- *      build.gradle
+ *      CDDA/package-info.java
  *      Drift Detection
  *
  *  Copyright 2017 Ehsan Nezhadian
@@ -18,30 +18,7 @@
  *
  */
 
-version '1.0-SNAPSHOT'
-
-apply plugin: 'java'
-
-sourceCompatibility = 1.8
-
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    compile     fileTree(dir: 'libs', include: ['*.jar'])
-    compile     'com.google.guava:guava:23.0'
-    compile     'org.apache.commons:commons-csv:1.4'
-    testCompile 'junit:junit:4.12'
-}
-
-
-task run(type: JavaExec) {
-    dependsOn 'build'
-
-    group       = 'Build'
-    description = 'Run the project.'
-    main        = 'Main'
-    classpath   = sourceSets.main.runtimeClasspath
-}
+/**
+ * TODO: Documentation
+ */
+package CDDA;
