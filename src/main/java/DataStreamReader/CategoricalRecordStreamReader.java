@@ -38,6 +38,7 @@ public final class CategoricalRecordStreamReader extends DataStreamReader<Immuta
      *                       INSTANCE MEMBERS AND METHODS                       *
      *--------------------------------------------------------------------------*/
 
+    // TODO: Add support for all CSV file formats.
     public CategoricalRecordStreamReader(String path, boolean hasHeader) throws IOException {
         CSVParser parser = CSVParser.parse(new File(path), Charset.forName("UTF-8"), CSVFormat.RFC4180);
         this.records = parser.iterator();
