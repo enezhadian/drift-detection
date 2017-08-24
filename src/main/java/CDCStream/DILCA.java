@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableSet;
 
 class DILCA {
 
+    // TODO: Make sure this is fast enough because at least it does not seem so.
     public static DILCAMatrix distanceMatrixFor(ImmutableList<ImmutableList<String>> database,
                                                 int targetAttributeIndex) {
         // Find value domain for target attribute.
@@ -38,18 +39,58 @@ class DILCA {
         }
         ImmutableSet<String> domain = domainBuilder.build();
 
+        // Build distance matrix.
+        DILCAMatrix distanceMatrix = new DILCAMatrix(domain);
+
+
         // Find context attributes.
         int[] contextAttributeIndexes = contextAttributeIndexesFor(database, targetAttributeIndex);
 
-        // Build distance matrix.
-        DILCAMatrix distanceMatrix = new DILCAMatrix(domain);
-        double distance;
+        Map<String, Map<String, Integer>> cooccurrencesMap = new HashMap<>();
+        String contextValue, targetValue;
+        Map<String, Integer> targetMap;
+        double totalContextDomainSizes = 0;
+        double currentSum, difference;
+
+        for (int contextAttributeIndex : contextAttributeIndexes) {
+            // Clear co-occurrences map to use it for current context attribute.
+            cooccurrencesMap.clear();
+
+            // Count co-occurrences of cotext and target values.
+            for (ImmutableList<String> record : database) {
+                contextValue = record.get(contextAttributeIndex);
+                targetValue = record.get(targetAttributeIndex);
+
+                targetMap = cooccurrencesMap.getOrDefault(contextValue, new HashMap<>());
+                targetMap.put(targetValue, targetMap.getOrDefault(targetValue, 0) + 1);
+                cooccurrencesMap.put(contextValue, targetMap);
+            }
+
+            totalContextDomainSizes += cooccurrencesMap.size();
+
+            // Calculate the sum of squared differences over all the values of current context attribute.
+            for (String firstValue : domain) {
+                for (String secondValue : domain) {
+                    if (firstValue.compareTo(secondValue) < 0) {
+                        for (String value : cooccurrencesMap.keySet()) {
+                            targetMap = cooccurrencesMap.get(value);
+
+                            currentSum = distanceMatrix.get(firstValue, secondValue);
+                            difference = (targetMap.getOrDefault(firstValue, 0) -
+                                    targetMap.getOrDefault(secondValue, 0));
+                            distanceMatrix.set(firstValue, secondValue, currentSum + (difference * difference));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Normalize sum of squared differences.
         for (String firstValue : domain) {
             for (String secondValue : domain) {
                 if (firstValue.compareTo(secondValue) < 0) {
-                    distance = distanceFor(database, targetAttributeIndex, contextAttributeIndexes,
-                            firstValue, secondValue);
-                    distanceMatrix.set(firstValue, secondValue, distance);
+                    currentSum = distanceMatrix.get(firstValue, secondValue);
+                    distanceMatrix.set(firstValue, secondValue, Math.sqrt(currentSum / totalContextDomainSizes));
                 }
             }
         }
@@ -61,27 +102,6 @@ class DILCA {
                                                     int targetAttributeIndex) {
         // TODO: Implement this.
         return null;
-    }
-
-    private static double cooccurrencesFor(ImmutableList<ImmutableList<String>> database,
-                                           int targetAttributeIndex,
-                                           int contextAttributeIndex) {
-        // TODO: Implement this.
-        Map<String, Map<String, Integer>> cooccurrencesMap = new HashMap<>();
-
-        String contextValue, targetValue;
-        Map<String, Integer> targetMap;
-        for (ImmutableList<String> record : database) {
-            contextValue = record.get(contextAttributeIndex);
-            targetValue = record.get(targetAttributeIndex);
-
-            // Increment co-occurrence count for context and target values.
-            targetMap = cooccurrencesMap.getOrDefault(contextValue, new HashMap<>());
-            targetMap.put(targetValue, targetMap.getOrDefault(targetValue, 0) + 1);
-            cooccurrencesMap.put(contextValue, targetMap);
-        }
-
-        return 0;
     }
 
     // Make `DILCA` non-instantiatable.
