@@ -1,5 +1,5 @@
 /*
- *      Main.java
+ *      CDDA/package-info.java
  *      Drift Detection
  *
  *  Copyright 2017 Ehsan Nezhadian
@@ -18,21 +18,7 @@
  *
  */
 
-import DataStreamReader.*;
-
-
-public class Main {
-
-    public static void runCDDA() throws Exception {
-        final int blockSize = 10000;
-        final double minChangeDegree = 0.1;
-
-        TabularStreamReader stream = new TabularStreamReader("data/kddcup_10_percent.txt", false);
-        new CDDA.DriftDetector(stream, blockSize, minChangeDegree).run();
-    }
-
-    public static void main(String[] args) throws Exception {
-        runCDDA();
-    }
-
-}
+/**
+ * TODO: Documentation
+ */
+package CDDA;
