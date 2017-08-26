@@ -17,11 +17,10 @@
  *  limitations under the License.
  *
  */
-g
+
 package CDCStream;
 
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import DataStreamReader.CategoricalRecordStreamReader;
 import com.google.common.collect.ImmutableList;
