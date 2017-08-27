@@ -32,6 +32,10 @@ import com.google.common.collect.Sets;
 
 public class DriftDetector {
 
+    /*--------------------------------------------------------------------------*
+     *                       INSTANCE MEMBERS AND METHODS                       *
+     *--------------------------------------------------------------------------*/
+
     public DriftDetector(CategoricalRecordStreamReader stream, int blockSize, double minChangeDegree) {
         this.stream = stream;
         this.blockSize = blockSize;

@@ -27,6 +27,10 @@ import java.util.NoSuchElementException;
 
 abstract class DataStreamReader<Type> {
 
+    /*--------------------------------------------------------------------------*
+     *                       INSTANCE MEMBERS AND METHODS                       *
+     *--------------------------------------------------------------------------*/
+
     public ImmutableList<Type> head(int maxSize) throws NoSuchElementException {
         expandHeadTo(maxSize);
         return head.subList(0, maxSize <= head.size() ? maxSize : head.size());
