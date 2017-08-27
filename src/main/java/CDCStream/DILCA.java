@@ -50,7 +50,7 @@ class DILCA {
         Map<String, Map<String, Double>> distances = new HashMap<>();
 
         // Find context attributes.
-        int[] contextAttributeIndexes = contextAttributeIndexesFor(cooccurrences);
+        Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(cooccurrences);
 
         Map<String, Map<String, Integer>> attributeCooccurrences;
         Map<String, Integer> valueCooccurrences;
@@ -129,9 +129,41 @@ class DILCA {
         return cooccurrences;
     }
 
-    private static int[] contextAttributeIndexesFor(List<Map<String, Map<String, Integer>>> cooccurrences) {
-        // TODO: Implement this.
+    private static Set<Integer> contextAttributeIndexesFor(List<Map<String, Map<String, Integer>>> cooccurrences) {
+        int numAttributes = cooccurrences.size();
+        List<Double> uncertainties = new ArrayList<>(cooccurrences.size());
+        List<Integer> indexes = new ArrayList<>(cooccurrences.size());
+
+        // Calculate attribute relevance.
+        Map<String, Map<String, Integer>> attributeCoocurrences;
+        for (int i = 0; i < numAttributes; i++) {
+            attributeCoocurrences = cooccurrences.get(i);
+            if (attributeCoocurrences != null) {
+                indexes.add(i);
+                uncertainties.set(i, symmetricalUncertainty(attributeCoocurrences));
+            }
+        }
+
+        // Sort indexes in descending order based on their corresponding symmetrical uncertainty.
+        indexes.sort((i, j) -> (int) Math.signum(uncertainties.get(i) - uncertainties.get(j)));
+
+        // Remove redundant attributes.
+        for (int i = 0; i < indexes.size(); i++) {
+            if (-1 != indexes.get(i)) {
+                for (int j = i; j < indexes.size(); j++) {
+                    if (-1 != indexes.get(j)) {
+                        // TODO: Implement this.
+                    }
+                }
+            }
+        }
+
         return null;
+    }
+
+    private static double symmetricalUncertainty(Map<String, Map<String, Integer>> attributeCoocurrences) {
+        // TODO: Implement this.
+        return 0;
     }
 
 

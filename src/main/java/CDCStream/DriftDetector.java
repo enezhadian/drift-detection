@@ -20,7 +20,10 @@
 
 package CDCStream;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 
@@ -33,17 +36,78 @@ public class DriftDetector {
      *                       INSTANCE MEMBERS AND METHODS                       *
      *--------------------------------------------------------------------------*/
 
-    public DriftDetector(CategoricalRecordStreamReader stream, int blockSize) {}
+    public DriftDetector(CategoricalRecordStreamReader stream,
+                         int blockSize,
+                         double driftCoefficient) {
+        this.stream = stream;
+        this.blockSize = blockSize;
+        this.driftCoefficient = driftCoefficient;
+    }
 
     public void run() {
+        double blockSummary;
+        double absoluteDifference;
+        double mean = 0;
+        double standardDeviation = 0, maxStandardDeviation = Double.MIN_VALUE, minStandardDeviation = Double.MAX_VALUE;
+
+        ImmutableList<ImmutableList<String>> block;
+        List<Double> summaries = new ArrayList<>();
+
         try {
+            for (int i = 0; i < 2; i++) {
+                block = stream.head(blockSize);
+                stream.discard(block.size());
+
+                summaries.add(summaryOf(block));
+            }
+
             while (true) {
-                // TODO: Implement this.
+                block = stream.head(blockSize);
+                stream.discard(block.size());
+
+                blockSummary = summaryOf(block);
+
+                if (summaries.size() > 1) {
+                    // Calculate the mean.
+                    mean = 0;
+                    for (double summary : summaries) {
+                        mean += summary;
+                    }
+                    mean /= summaries.size();
+
+                    // Calculate the standard deviation.
+                    standardDeviation = 0;
+                    for (double summary : summaries) {
+                        standardDeviation += Math.pow(summary - mean, 2);
+                    }
+                    standardDeviation /= summaries.size();
+
+                    // Update `maxStandardDeviation` and `minStandardDeviation` if needed.
+                    if (maxStandardDeviation < standardDeviation) {
+                        maxStandardDeviation = standardDeviation;
+                    } else if (minStandardDeviation > standardDeviation) {
+                        minStandardDeviation = standardDeviation;
+                    }
+                } else if (summaries.size() == 1) {
+                    mean = summaries.get(0);
+                    standardDeviation = (minStandardDeviation + maxStandardDeviation) / 2;
+                }
+
+                absoluteDifference = Math.abs(blockSummary - mean);
+                if (absoluteDifference >= driftCoefficient * standardDeviation) {
+                    System.out.println("\033[1;32m" + "*** CHANGE: "  + absoluteDifference + " ***\033[0m");
+                    summaries.clear();
+                }
+                summaries.add(blockSummary);
             }
         } catch (NoSuchElementException e) {
             System.out.println("Done.");
         }
     }
+
+    private final CategoricalRecordStreamReader stream;
+    private final int blockSize;
+    private final double driftCoefficient;
 
     private double summaryOf(ImmutableList<ImmutableList<String>> block) {
         if (block.size() == 0) {
