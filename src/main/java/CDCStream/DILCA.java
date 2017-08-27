@@ -56,7 +56,7 @@ class DILCA {
             // Clear co-occurrences map to use it for current context attribute.
             cooccurrencesMap.clear();
 
-            // Count co-occurrences of cotext and target values.
+            // Count co-occurrences of context and target values.
             for (ImmutableList<String> record : database) {
                 contextValue = record.get(contextAttributeIndex);
                 targetValue = record.get(targetAttributeIndex);
@@ -102,6 +102,13 @@ class DILCA {
                                                     int targetAttributeIndex) {
         // TODO: Implement this.
         return null;
+    }
+
+    private static double symmetricalUncertainty(ImmutableList<ImmutableList<String>> database,
+                                                 int targetAttributeIndex,
+                                                 int attributeIndex) {
+        // TODO: Implement this.
+        return 0;
     }
 
     // Make `DILCA` non-instantiatable.

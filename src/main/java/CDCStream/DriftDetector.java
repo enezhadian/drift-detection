@@ -22,8 +22,9 @@ package CDCStream;
 
 import java.util.NoSuchElementException;
 
-import DataStreamReader.CategoricalRecordStreamReader;
 import com.google.common.collect.ImmutableList;
+
+import DataStreamReader.CategoricalRecordStreamReader;
 
 
 public class DriftDetector {
