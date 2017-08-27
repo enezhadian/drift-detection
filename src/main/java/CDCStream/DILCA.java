@@ -1,39 +1,103 @@
-/*
- *      CDCStream/DILCA.java
- *      Drift Detection
- *
- *  Copyright 2017 Ehsan Nezhadian
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
 package CDCStream;
 
 import java.util.*;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 
-class DILCA {
+public class DILCA {
 
     /*--------------------------------------------------------------------------*
      *                        STATIC MEMBERS AND METHODS                        *
      *--------------------------------------------------------------------------*/
 
-    // TODO: Make sure this is fast enough.
+    static class DatabaseStatistics {
+
+        public DatabaseStatistics(ImmutableList<ImmutableList<String>> database) {
+            if (database.size() == 0) {
+                throw new IllegalArgumentException("Database cannot be empty.");
+            }
+
+            this.database = database;
+            this.numAttributes = database.get(0).size();
+
+            this.attributeDomains = new ArrayList<>(numAttributes);
+            for (int i = 0; i < numAttributes; i++) {
+                attributeDomains.add(new HashMap<>());
+            }
+
+            // Find domain of all attributes.
+            int[] nextIndex = new int[numAttributes];
+            for (ImmutableList<String> record : database) {
+                for (int i = 0; i < numAttributes; i++) {
+                    String value = record.get(i);
+                    if (attributeDomains.get(i).containsKey(value)) {
+                        attributeDomains.get(i).put(value, nextIndex[i]);
+                        nextIndex[i]++;
+                    }
+                }
+            }
+
+            this.lazyCooccurrences = new int[numAttributes][][][];
+            for (int i = 0; i < numAttributes; i++) {
+                this.lazyCooccurrences[i] = new int[numAttributes - i][][];
+            }
+        }
+
+        public int[][] cooccurrencesFor(int firstAttributeIndex, int secondAttributeIndex) {
+            // Make sure `firstAttributeIndex` is the smaller index.
+            /* if (firstAttributeIndex > secondAttributeIndex) {
+                int temp = firstAttributeIndex;
+                firstAttributeIndex = secondAttributeIndex;
+                secondAttributeIndex = temp;
+            } */
+
+            int[][] cooccurrenceMatrix = lazyCooccurrences[firstAttributeIndex][secondAttributeIndex];
+
+            if (null == cooccurrenceMatrix) {
+                int firstAttributeDomainSize = attributeDomains.get(firstAttributeIndex).size();
+                int secondAttributeDomainSize = attributeDomains.get(secondAttributeIndex).size();
+
+                cooccurrenceMatrix = new int[firstAttributeDomainSize][];
+                for (int i = 0; i < firstAttributeDomainSize; i++) {
+                    cooccurrenceMatrix[i] = new int[secondAttributeDomainSize];
+                }
+
+                int[][] cooccurrenceTransposeMatrix = new int[secondAttributeDomainSize][];
+                for (int i = 0; i < secondAttributeDomainSize; i++) {
+                    cooccurrenceTransposeMatrix[i] = new int[firstAttributeDomainSize];
+                }
+
+
+                for (ImmutableList<String> record : database) {
+                    String firstAttributeValue = record.get(firstAttributeIndex);
+                    String secondAttributeValue = record.get(secondAttributeIndex);
+
+                    int firstValueIndex = attributeDomains.get(firstAttributeIndex).get(firstAttributeValue);
+                    int secondValueIndex = attributeDomains.get(secondAttributeIndex).get(secondAttributeValue);
+
+                    cooccurrenceMatrix[firstValueIndex][secondValueIndex]++;
+                    cooccurrenceTransposeMatrix[secondValueIndex][firstValueIndex]++;
+                }
+
+                lazyCooccurrences[firstAttributeIndex][secondAttributeIndex] = cooccurrenceMatrix;
+            }
+
+            return cooccurrenceMatrix;
+        }
+
+        public int domainSize(int attributeIndex) {
+            return attributeDomains.get(attributeIndex).size();
+        }
+
+        private final ImmutableList<ImmutableList<String>> database;
+        private final int numAttributes;
+        private final List<Map<String, Integer>> attributeDomains;
+        private final int[][][][] lazyCooccurrences;
+
+    }
+
     public static DILCA distanceMatrixFor(ImmutableList<ImmutableList<String>> database,
                                           int targetAttributeIndex) {
         System.out.print(".");
@@ -43,51 +107,49 @@ class DILCA {
             throw new IllegalArgumentException("Empty database.");
         }
 
-        // Build the distance matrix.
-        Map<String, Map<String, Double>> distances = new HashMap<>();
+        // Calculate statistics.
+        DatabaseStatistics statistics = new DatabaseStatistics(database);
 
         // Find context attributes.
-        Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(database, targetAttributeIndex);
+        Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(statistics, targetAttributeIndex);
 
-        Map<String, Map<String, Integer>> cooccurrences = new HashMap<>();
-        Map<String, Integer> valueCooccurrences;
-        Map<String, Double> valueDistances;
+        // Build the distance matrix.
+        int targetDomainSize = statistics.domainSize(targetAttributeIndex);
+        double[][] distances = new double[targetDomainSize][];
+        for (int i = 1; i < distances.length; i++) {
+            distances[i] = new double[targetDomainSize - i];
+        }
+
+        int[][] cooccurrences;
+        int[] valueCooccurrences;
+        double[] valueDistances;
 
         double totalContextDomainSizes = 0;
         for (int attributeIndex : contextAttributeIndexes) {
-            cooccurrences.clear();
-            calculateStatisticsFor(database, targetAttributeIndex, attributeIndex, null, null, cooccurrences);
+            cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
 
             // Calculate total sum of domain sizes for all attributes.
-            totalContextDomainSizes += cooccurrences.size();
+            totalContextDomainSizes += cooccurrences.length;
 
             // Calculate the sum of squared differences over all the values of current context attribute.
-            for (String attributeValue : cooccurrences.keySet()) {
-                valueCooccurrences = cooccurrences.get(attributeValue);
+            for (int i = 0; i < cooccurrences.length; i++) {
+                valueCooccurrences = cooccurrences[i];
 
-                for (String firstValue : valueCooccurrences.keySet()) {
-                    for (String secondValue : valueCooccurrences.keySet()) {
-                        if (firstValue.compareTo(secondValue) < 0) {
-                            valueDistances = distances.getOrDefault(firstValue, new HashMap<>());
-
-                            double currentSum = valueDistances.getOrDefault(secondValue, 0.0);
-                            double difference = valueCooccurrences.getOrDefault(firstValue, 0) -
-                                    valueCooccurrences.getOrDefault(secondValue, 0);
-                            valueDistances.put(secondValue, currentSum + (difference * difference));
-                            distances.put(firstValue, valueDistances);
-                        }
+                for (int j = 0; j < valueCooccurrences.length; j++) {
+                    for (int k = j + 1; k < valueCooccurrences.length; k++) {
+                        double difference = valueCooccurrences[j] - valueCooccurrences[k];
+                        distances[j][k - j - 1] += difference * difference;
                     }
                 }
             }
         }
 
         // Normalize sum of squared differences.
-        for (String firstValue : distances.keySet()) {
-            valueDistances = distances.get(firstValue);
+        for  (int i = 0; i < distances.length; i++) {
+            valueDistances = distances[i];
 
-            for (String secondValue : valueDistances.keySet()) {
-                double currentSum = valueDistances.get(secondValue);
-                valueDistances.put(secondValue, Math.sqrt(currentSum / totalContextDomainSizes));
+            for (int j = i + 1; j < valueDistances.length; j++) {
+                valueDistances[j - i - 1] = Math.sqrt(valueDistances[j - i - 1] / totalContextDomainSizes);
             }
         }
 
@@ -96,9 +158,9 @@ class DILCA {
 
     private static final double log2 = Math.log(2);
 
-    private static Set<Integer> contextAttributeIndexesFor(ImmutableList<ImmutableList<String>> database,
+    private static Set<Integer> contextAttributeIndexesFor(DatabaseStatistics statistics,
                                                            int targetAttributeIndex) {
-        int numAttributes = database.get(0).size();
+        int numAttributes = statistics.numAttributes;
         List<Double> uncertainties = new ArrayList<>(numAttributes);
         List<Integer> indexes = new ArrayList<>(numAttributes);
 
@@ -106,7 +168,7 @@ class DILCA {
         for (int i = 0; i < numAttributes; i++) {
             if (i != targetAttributeIndex) {
                 indexes.add(i);
-                uncertainties.add(symmetricalUncertainty(database, targetAttributeIndex, i));
+                uncertainties.add(symmetricalUncertainty(statistics, targetAttributeIndex, i));
             } else {
                 uncertainties.add(null);
             }
@@ -122,7 +184,7 @@ class DILCA {
             if (-1 != firstAttribute) {
                 for (int j = i; j < indexes.size(); j++) {
                     secondAttribute = indexes.get(j);
-                    if (-1 != secondAttribute && symmetricalUncertainty(database, firstAttribute, secondAttribute) <=
+                    if (-1 != secondAttribute && symmetricalUncertainty(statistics, firstAttribute, secondAttribute) <=
                             uncertainties.get(secondAttribute)) {
                         indexes.set(j, -1);
                     }
@@ -139,53 +201,49 @@ class DILCA {
         return contextBuilder.build();
     }
 
-    private static double symmetricalUncertainty(ImmutableList<ImmutableList<String>> database,
+    private static double symmetricalUncertainty(DatabaseStatistics statistics,
                                                  int targetAttributeIndex,
                                                  int attributeIndex) {
-        Map<String, Integer> targetOccurrences = new HashMap<>();
-        Map<String, Integer> attributeOccurrences = new HashMap<>();
-        Map<String, Map<String, Integer>> cooccurrences = new HashMap<>();
-
-        calculateStatisticsFor(database, targetAttributeIndex, attributeIndex,
-                targetOccurrences, attributeOccurrences, cooccurrences);
+        int[][] targetOccurrences = statistics.cooccurrencesFor(targetAttributeIndex, targetAttributeIndex);
+        int[][] attributeOccurrences = statistics.cooccurrencesFor(attributeIndex, attributeIndex);
+        int[][] cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex);
 
         double probability;
-        Map<String, Integer> valueCoccurrences;
 
         double targetEntropy = 0;
         // Calculate target attribute's entropy.
         double totalTargetOccurrences = 0;
-        for (String value : targetOccurrences.keySet()) {
-            totalTargetOccurrences += targetOccurrences.get(value);
+        for (int i = 0; i < targetOccurrences.length; i++) {
+            totalTargetOccurrences += targetOccurrences[i][i];
         }
-        for (String value : targetOccurrences.keySet()) {
-            probability = (double) targetOccurrences.get(value) / totalTargetOccurrences;
+        for (int i = 0; i < targetOccurrences.length; i++) {
+            probability = (double) targetOccurrences[i][i] / totalTargetOccurrences;
             targetEntropy -= probability * Math.log(probability) / log2;
         }
 
         double attributeEntropy = 0;
         // Calculate attribute's entropy.
         double totalAttributeOccurrences = 0;
-        for (String value : attributeOccurrences.keySet()) {
-            totalAttributeOccurrences += attributeOccurrences.get(value);
+        for (int i = 0; i < attributeOccurrences.length; i++) {
+            totalAttributeOccurrences += attributeOccurrences[i][i];
         }
-        for (String value : attributeOccurrences.keySet()) {
-            probability = (double) attributeOccurrences.get(value) / totalAttributeOccurrences;
+        for (int i = 0; i < attributeOccurrences.length; i++) {
+            probability = (double) attributeOccurrences[i][i] / totalAttributeOccurrences;
             attributeEntropy -= probability * Math.log(probability) / log2;
         }
 
         double conditionalEntropy = 0;
         // Calculate conditional entropy of target attribute with respect to the given attribute.
-        for (String attributeValue : cooccurrences.keySet()) {
-            valueCoccurrences = cooccurrences.get(attributeValue);
+        for (int i = 0; i < cooccurrences.length; i++) {
+            int[] valueCooccurrences = cooccurrences[i];
 
             double totalValueCooccurrences = 0;
-            for (String value : valueCoccurrences.keySet()) {
-                totalValueCooccurrences += valueCoccurrences.get(value);
+            for (int j = 0; j < valueCooccurrences.length; j++) {
+                totalValueCooccurrences += valueCooccurrences[j];
             }
 
-            for (String targetValue : valueCoccurrences.keySet()) {
-                probability = (double) valueCoccurrences.get(targetValue) / totalValueCooccurrences;
+            for (int j = 0; j < valueCooccurrences.length; j++) {
+                probability = (double) valueCooccurrences[j] / totalValueCooccurrences;
                 conditionalEntropy -= probability * Math.log(probability) / log2;
             }
         }
@@ -194,104 +252,33 @@ class DILCA {
         return (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEntropy);
     }
 
-    private static void calculateStatisticsFor(ImmutableList<ImmutableList<String>> database,
-                                               int targetAttributeIndex,
-                                               int attributeIndex,
-                                               Map<String, Integer> outputTargetOccurrences,
-                                               Map<String, Integer> outputAttributeOccurrences,
-                                               Map<String, Map<String, Integer>> outputCooccurrences) {
-        if (null == outputCooccurrences) {
-            throw new IllegalArgumentException("`outputCoocurrences` cannot be null.");
-        }
-
-        outputCooccurrences.clear();
-        if (null != outputTargetOccurrences) {
-            outputTargetOccurrences.clear();
-        }
-        if (null != outputAttributeOccurrences) {
-            outputAttributeOccurrences.clear();
-        }
-
-        String attributeValue, targetValue;
-        Map<String, Integer> valueCooccurrences;
-
-        // Count occurrences and co-occurrences of attribute values and values of target attribute.
-        for (ImmutableList<String> record : database) {
-            attributeValue = record.get(attributeIndex);
-            targetValue = record.get(targetAttributeIndex);
-
-            valueCooccurrences = outputCooccurrences.getOrDefault(attributeValue, new HashMap<>());
-            valueCooccurrences.put(targetValue, valueCooccurrences.getOrDefault(targetValue, 0) + 1);
-            outputCooccurrences.put(attributeValue, valueCooccurrences);
-
-            if (null != outputTargetOccurrences) {
-                outputTargetOccurrences.put(attributeValue,
-                        outputTargetOccurrences.getOrDefault(attributeValue, 0) + 1);
-            }
-
-            if (null != outputAttributeOccurrences) {
-                outputAttributeOccurrences.put(attributeValue,
-                        outputAttributeOccurrences.getOrDefault(attributeValue, 0) + 1);
-            }
-        }
-    }
-
     /*--------------------------------------------------------------------------*
      *                       INSTANCE MEMBERS AND METHODS                       *
      *--------------------------------------------------------------------------*/
 
-    public ImmutableSet<String> domain() {
-        return domain;
-    }
-
-    public double get(String firstValue, String secondValue) {
-        int comparison = firstValue.compareTo(secondValue);
-        if (0 == comparison) {
-            // Make sure `firstValue` is a valid value.
-            distances.get(firstValue);
-            return 0;
-        }
-
-        // Make sure `firstValue` is smaller than `secondValue`.
-        if (0 > comparison) {
-            String temp = firstValue;
-            firstValue = secondValue;
-            secondValue = temp;
-        }
-
-        return distances.get(firstValue).get(secondValue);
-    }
-
     public double normalizedSquaredSumRoot() {
         double sum = 0;
-        Map<String, Double> valueDistances;
+        double[] valueDistances;
 
-        for (String firstValue : distances.keySet()) {
-            valueDistances = distances.get(firstValue);
+        for (int i = 0; i < distances.length; i++) {
+            valueDistances = distances[i];
 
-            for (String secondValue : valueDistances.keySet()) {
-                sum += valueDistances.get(secondValue);
+            for (int j = 0; j < valueDistances.length; j++) {
+                sum += valueDistances[j];
             }
         }
 
         if (0 == sum) {
             return 0;
         } else {
-            return (2 * Math.sqrt(sum)) / (domain.size() * (domain.size() - 1));
+            return (2 * Math.sqrt(sum)) / (distances.length * (distances.length - 1));
         }
     }
 
-    private Map<String, Map<String, Double>> distances;
-    private ImmutableSet<String> domain;
+    private double[][] distances;
 
-    private DILCA(Map<String, Map<String, Double>> distances) {
+    private DILCA(double[][] distances) {
         this.distances = distances;
-
-        ImmutableSet.Builder<String> domainBuilder = ImmutableSet.<String>builder().addAll(distances.keySet());
-        for (String value : distances.keySet()) {
-            domainBuilder.addAll(distances.get(value).keySet());
-        }
-        this.domain = domainBuilder.build();
     }
 
 }
