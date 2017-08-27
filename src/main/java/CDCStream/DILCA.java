@@ -139,6 +139,10 @@ class DILCA {
      *                       INSTANCE MEMBERS AND METHODS                       *
      *--------------------------------------------------------------------------*/
 
+    public ImmutableSet<String> domain() {
+        return domain;
+    }
+
     public double get(String firstValue, String secondValue) {
         int comparison = firstValue.compareTo(secondValue);
         if (0 == comparison) {
@@ -157,10 +161,32 @@ class DILCA {
         return distances.get(firstValue).get(secondValue);
     }
 
-    Map<String, Map<String, Double>> distances;
+    public double normalizedSquaredSumRoot() {
+        double sum = 0;
+        Map<String, Double> valueDistances;
+
+        for (String firstValue : distances.keySet()) {
+            valueDistances = distances.get(firstValue);
+
+            for (String secondValue : valueDistances.keySet()) {
+                sum += valueDistances.get(secondValue);
+            }
+        }
+
+        return (2 * Math.sqrt(sum)) / (domain.size() * (domain.size() - 1));
+    }
+
+    private Map<String, Map<String, Double>> distances;
+    private ImmutableSet<String> domain;
 
     private DILCA(Map<String, Map<String, Double>> distances) {
         this.distances = distances;
+
+        ImmutableSet.Builder<String> domainBuilder = ImmutableSet.<String>builder().addAll(distances.keySet());
+        for (String value : distances.keySet()) {
+            domainBuilder.addAll(distances.get(value).keySet());
+        }
+        this.domain = domainBuilder.build();
     }
 
 }

@@ -46,21 +46,19 @@ public class DriftDetector {
     }
 
     private double summaryOf(ImmutableList<ImmutableList<String>> block) {
-        // TODO: Implement this.
-        return 0;
-//        if (block.size() == 0) {g
-//            throw new IllegalArgumentException("Block should not be empty.");
-//        }
-//
-//        int numAttributes = block.get(0).size();
-//
-//        double summary = 0;
-//        for (int attribute = 0; attribute < numAttributes; attribute++) {
-//            summary += DILCA.distanceMatrixFor(block, attribute).normalizedSquaredSum();
-//        }
-//        summary /= numAttributes;
-//
-//        return summary;
+        if (block.size() == 0) {
+            throw new IllegalArgumentException("Block should not be empty.");
+        }
+
+        int numAttributes = block.get(0).size();
+
+        double summary = 0;
+        for (int attribute = 0; attribute < numAttributes; attribute++) {
+            summary += DILCA.distanceMatrixFor(block, attribute).normalizedSquaredSumRoot();
+        }
+        summary /= numAttributes;
+
+        return summary;
     }
 
 }
