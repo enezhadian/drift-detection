@@ -116,8 +116,8 @@ public class DILCA {
         // Build the distance matrix.
         int targetDomainSize = statistics.domainSize(targetAttributeIndex);
         double[][] distances = new double[targetDomainSize][];
-        for (int i = 0; i < distances.length - 1; i++) {
-            distances[i] = new double[targetDomainSize - i - 1];
+        for (int i = 1; i < distances.length; i++) {
+            distances[i] = new double[targetDomainSize - i];
         }
 
         int[][] cooccurrences;
