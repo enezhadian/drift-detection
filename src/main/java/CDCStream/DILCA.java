@@ -115,8 +115,8 @@ public class DILCA {
 
         // Build the distance matrix.
         int targetDomainSize = statistics.domainSize(targetAttributeIndex);
-        double[][] distances = new double[targetDomainSize - 1][];
-        for (int i = 0; i < distances.length; i++) {
+        double[][] distances = new double[targetDomainSize][];
+        for (int i = 0; i < distances.length - 1; i++) {
             distances[i] = new double[targetDomainSize - i - 1];
         }
 
@@ -148,8 +148,8 @@ public class DILCA {
         for  (int i = 0; i < distances.length; i++) {
             valueDistances = distances[i];
 
-            for (int j = 0; j < valueDistances.length; j++) {
-                valueDistances[j] = Math.sqrt(valueDistances[j] / totalContextDomainSizes);
+            for (int j = i + 1; j < valueDistances.length; j++) {
+                valueDistances[j - i - 1] = Math.sqrt(valueDistances[j - i - 1] / totalContextDomainSizes);
             }
         }
 
