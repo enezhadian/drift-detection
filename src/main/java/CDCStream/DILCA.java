@@ -41,31 +41,28 @@ class DILCA {
         }
 
         int numAttributes = database.get(0).size();
-        // Calculate the co-occurrences of target values with attribute values.
-        List<Map<String, Map<String, Integer>>> cooccurrences = cooccurrencesIn(
-                database, numAttributes, targetAttributeIndex);
-
 
         // Build the distance matrix.
         Map<String, Map<String, Double>> distances = new HashMap<>();
 
         // Find context attributes.
-        Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(cooccurrences);
+        Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(database, targetAttributeIndex);
 
-        Map<String, Map<String, Integer>> attributeCooccurrences;
+        Map<String, Map<String, Integer>> cooccurrences = new HashMap<>();
         Map<String, Integer> valueCooccurrences;
         Map<String, Double> valueDistances;
 
         double totalContextDomainSizes = 0;
         for (int attributeIndex : contextAttributeIndexes) {
-            attributeCooccurrences = cooccurrences.get(attributeIndex);
+            cooccurrences.clear();
+            calculateStatisticsFor(database, targetAttributeIndex, attributeIndex, null, null, cooccurrences);
 
             // Calculate total sum of domain sizes for all attributes.
-            totalContextDomainSizes += attributeCooccurrences.size();
+            totalContextDomainSizes += cooccurrences.size();
 
             // Calculate the sum of squared differences over all the values of current context attribute.
-            for (String attributeValue : attributeCooccurrences.keySet()) {
-                valueCooccurrences = attributeCooccurrences.get(attributeValue);
+            for (String attributeValue : cooccurrences.keySet()) {
+                valueCooccurrences = cooccurrences.get(attributeValue);
 
                 for (String firstValue : valueCooccurrences.keySet()) {
                     for (String secondValue : valueCooccurrences.keySet()) {
@@ -95,52 +92,19 @@ class DILCA {
         return new DILCA(distances);
     }
 
-    private static List<Map<String, Map<String, Integer>>> cooccurrencesIn(ImmutableList<ImmutableList<String>> database,
-                                                                           int numAttributes,
-                                                                           int targetAttributeIndex) {
-        // Data structure holding the co-occurrences of target values and attribute values for all the attributes.
-        List<Map<String, Map<String, Integer>>> cooccurrences = new ArrayList<>(numAttributes);
-        for (int i = 0; i < numAttributes; i++) {
-            if (i != targetAttributeIndex) {
-                cooccurrences.set(i, new HashMap<>());
-            }
-        }
+    private static final double log2 = Math.log(2);
 
-        String attributeValue, targetValue;
-        Map<String, Map<String, Integer>> cooccurrencesMap;
-        Map<String, Integer> targetMap;
-
-        // Count co-occurrences of target values and values of the current attribute.
-        for (ImmutableList<String> record : database) {
-            for (int i = 0; i < numAttributes; i++) {
-                if (i != targetAttributeIndex) {
-                    cooccurrencesMap = cooccurrences.get(i);
-
-                    attributeValue = record.get(i);
-                    targetValue = record.get(targetAttributeIndex);
-
-                    targetMap = cooccurrencesMap.getOrDefault(attributeValue, new HashMap<>());
-                    targetMap.put(targetValue, targetMap.getOrDefault(targetValue, 0) + 1);
-                    cooccurrencesMap.put(attributeValue, targetMap);
-                }
-            }
-        }
-
-        return cooccurrences;
-    }
-
-    private static Set<Integer> contextAttributeIndexesFor(List<Map<String, Map<String, Integer>>> cooccurrences) {
-        int numAttributes = cooccurrences.size();
-        List<Double> uncertainties = new ArrayList<>(cooccurrences.size());
-        List<Integer> indexes = new ArrayList<>(cooccurrences.size());
+    private static Set<Integer> contextAttributeIndexesFor(ImmutableList<ImmutableList<String>> database,
+                                                           int targetAttributeIndex) {
+        int numAttributes = database.get(0).size();
+        List<Double> uncertainties = new ArrayList<>(numAttributes);
+        List<Integer> indexes = new ArrayList<>(numAttributes);
 
         // Calculate attribute relevance.
-        Map<String, Map<String, Integer>> attributeCoocurrences;
         for (int i = 0; i < numAttributes; i++) {
-            attributeCoocurrences = cooccurrences.get(i);
-            if (attributeCoocurrences != null) {
+            if (i != targetAttributeIndex) {
                 indexes.add(i);
-                uncertainties.set(i, symmetricalUncertainty(attributeCoocurrences));
+                uncertainties.set(i, symmetricalUncertainty(database, targetAttributeIndex, i));
             }
         }
 
@@ -148,24 +112,112 @@ class DILCA {
         indexes.sort((i, j) -> (int) Math.signum(uncertainties.get(i) - uncertainties.get(j)));
 
         // Remove redundant attributes.
+        int firstAttribute, secondAttribute;
         for (int i = 0; i < indexes.size(); i++) {
-            if (-1 != indexes.get(i)) {
+            firstAttribute = indexes.get(i);
+            if (-1 != firstAttribute) {
                 for (int j = i; j < indexes.size(); j++) {
-                    if (-1 != indexes.get(j)) {
-                        // TODO: Implement this.
+                    secondAttribute = indexes.get(j);
+                    if (-1 != secondAttribute && symmetricalUncertainty(database, firstAttribute, secondAttribute) <=
+                            uncertainties.get(secondAttribute)) {
+                        indexes.set(j, -1);
                     }
                 }
             }
         }
 
-        return null;
+        ImmutableSet.Builder<Integer> contextBuilder = ImmutableSet.builder();
+        for (int i : indexes) {
+            if (i != -1) {
+                contextBuilder.add(i);
+            }
+        }
+        return contextBuilder.build();
     }
 
-    private static double symmetricalUncertainty(Map<String, Map<String, Integer>> attributeCoocurrences) {
-        // TODO: Implement this.
-        return 0;
+    private static double symmetricalUncertainty(ImmutableList<ImmutableList<String>> database,
+                                                 int targetAttributeIndex,
+                                                 int attributeIndex) {
+        Map<String, Integer> targetOccurrences = new HashMap<>();
+        Map<String, Integer> attributeOccurrences = new HashMap<>();
+        Map<String, Map<String, Integer>> cooccurrences = new HashMap<>();
+
+        calculateStatisticsFor(database, targetAttributeIndex, attributeIndex,
+                targetOccurrences, attributeOccurrences, cooccurrences);
+
+        double probability;
+        Map<String, Integer> valueCoccurrences;
+
+        double targetEntropy = 0;
+        // Calculate target attribute's entropy.
+        for (String value : targetOccurrences.keySet()) {
+            probability = (double) targetOccurrences.get(value) / (double) targetOccurrences.size();
+            targetEntropy += probability * Math.log(probability) / log2;
+        }
+
+        double attributeEntropy = 0;
+        // Calculate attribute's entropy.
+        for (String value : attributeOccurrences.keySet()) {
+            probability = (double) attributeOccurrences.get(value) / (double) attributeOccurrences.size();
+            attributeEntropy += probability * Math.log(probability) / log2;
+        }
+
+        double conditionalEntropy = 0;
+        // Calculate conditional entropy of target attribute with respect to the given attribute.
+        for (String attributeValue : cooccurrences.keySet()) {
+            valueCoccurrences = cooccurrences.get(attributeValue);
+
+            for (String targetValue : valueCoccurrences.keySet()) {
+                probability = (double) valueCoccurrences.get(targetValue) / (double) valueCoccurrences.size();
+                conditionalEntropy += probability * Math.log(probability) / log2;
+            }
+        }
+
+        // Calculate symmetrical uncertainty.
+        return (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEntropy);
     }
 
+    private static void calculateStatisticsFor(ImmutableList<ImmutableList<String>> database,
+                                               int targetAttributeIndex,
+                                               int attributeIndex,
+                                               Map<String, Integer> outputTargetOccurrences,
+                                               Map<String, Integer> outputAttributeOccurrences,
+                                               Map<String, Map<String, Integer>> outputCooccurrences) {
+        if (null == outputCooccurrences) {
+            throw new IllegalArgumentException("`outputCoocurrences` cannot be null.");
+        }
+
+        outputCooccurrences.clear();
+        if (null != outputTargetOccurrences) {
+            outputTargetOccurrences.clear();
+        }
+        if (null != outputAttributeOccurrences) {
+            outputAttributeOccurrences.clear();
+        }
+
+        String attributeValue, targetValue;
+        Map<String, Integer> valueCooccurrences;
+
+        // Count occurrences and co-occurrences of attribute values and values of target attribute.
+        for (ImmutableList<String> record : database) {
+            attributeValue = record.get(attributeIndex);
+            targetValue = record.get(targetAttributeIndex);
+
+            valueCooccurrences = outputCooccurrences.getOrDefault(attributeValue, new HashMap<>());
+            valueCooccurrences.put(targetValue, valueCooccurrences.getOrDefault(targetValue, 0) + 1);
+            outputCooccurrences.put(attributeValue, valueCooccurrences);
+
+            if (null != outputTargetOccurrences) {
+                outputTargetOccurrences.put(attributeValue,
+                        outputTargetOccurrences.getOrDefault(attributeValue, 0) + 1);
+            }
+
+            if (null != outputAttributeOccurrences) {
+                outputAttributeOccurrences.put(attributeValue,
+                        outputAttributeOccurrences.getOrDefault(attributeValue, 0) + 1);
+            }
+        }
+    }
 
     /*--------------------------------------------------------------------------*
      *                       INSTANCE MEMBERS AND METHODS                       *
