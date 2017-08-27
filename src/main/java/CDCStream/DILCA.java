@@ -36,11 +36,12 @@ class DILCA {
     // TODO: Make sure this is fast enough.
     public static DILCA distanceMatrixFor(ImmutableList<ImmutableList<String>> database,
                                           int targetAttributeIndex) {
+        System.out.print(".");
+        System.out.flush();
+
         if (database.size() == 0) {
             throw new IllegalArgumentException("Empty database.");
         }
-
-        int numAttributes = database.get(0).size();
 
         // Build the distance matrix.
         Map<String, Map<String, Double>> distances = new HashMap<>();
@@ -73,6 +74,7 @@ class DILCA {
                             double difference = valueCooccurrences.getOrDefault(firstValue, 0) -
                                     valueCooccurrences.getOrDefault(secondValue, 0);
                             valueDistances.put(secondValue, currentSum + (difference * difference));
+                            distances.put(firstValue, valueDistances);
                         }
                     }
                 }
@@ -104,7 +106,9 @@ class DILCA {
         for (int i = 0; i < numAttributes; i++) {
             if (i != targetAttributeIndex) {
                 indexes.add(i);
-                uncertainties.set(i, symmetricalUncertainty(database, targetAttributeIndex, i));
+                uncertainties.add(symmetricalUncertainty(database, targetAttributeIndex, i));
+            } else {
+                uncertainties.add(null);
             }
         }
 
@@ -150,16 +154,24 @@ class DILCA {
 
         double targetEntropy = 0;
         // Calculate target attribute's entropy.
+        double totalTargetOccurrences = 0;
         for (String value : targetOccurrences.keySet()) {
-            probability = (double) targetOccurrences.get(value) / (double) targetOccurrences.size();
-            targetEntropy += probability * Math.log(probability) / log2;
+            totalTargetOccurrences += targetOccurrences.get(value);
+        }
+        for (String value : targetOccurrences.keySet()) {
+            probability = (double) targetOccurrences.get(value) / totalTargetOccurrences;
+            targetEntropy -= probability * Math.log(probability) / log2;
         }
 
         double attributeEntropy = 0;
         // Calculate attribute's entropy.
+        double totalAttributeOccurrences = 0;
         for (String value : attributeOccurrences.keySet()) {
-            probability = (double) attributeOccurrences.get(value) / (double) attributeOccurrences.size();
-            attributeEntropy += probability * Math.log(probability) / log2;
+            totalAttributeOccurrences += attributeOccurrences.get(value);
+        }
+        for (String value : attributeOccurrences.keySet()) {
+            probability = (double) attributeOccurrences.get(value) / totalAttributeOccurrences;
+            attributeEntropy -= probability * Math.log(probability) / log2;
         }
 
         double conditionalEntropy = 0;
@@ -167,9 +179,14 @@ class DILCA {
         for (String attributeValue : cooccurrences.keySet()) {
             valueCoccurrences = cooccurrences.get(attributeValue);
 
+            double totalValueCooccurrences = 0;
+            for (String value : valueCoccurrences.keySet()) {
+                totalValueCooccurrences += valueCoccurrences.get(value);
+            }
+
             for (String targetValue : valueCoccurrences.keySet()) {
-                probability = (double) valueCoccurrences.get(targetValue) / (double) valueCoccurrences.size();
-                conditionalEntropy += probability * Math.log(probability) / log2;
+                probability = (double) valueCoccurrences.get(targetValue) / totalValueCooccurrences;
+                conditionalEntropy -= probability * Math.log(probability) / log2;
             }
         }
 
@@ -257,7 +274,11 @@ class DILCA {
             }
         }
 
-        return (2 * Math.sqrt(sum)) / (domain.size() * (domain.size() - 1));
+        if (0 == sum) {
+            return 0;
+        } else {
+            return (2 * Math.sqrt(sum)) / (domain.size() * (domain.size() - 1));
+        }
     }
 
     private Map<String, Map<String, Double>> distances;

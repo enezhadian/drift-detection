@@ -45,7 +45,7 @@ public class DriftDetector {
 
     public void run() {
         double blockSummary;
-        double absoluteDifference;
+        double absoluteDifference, throshold;
         double mean = 0;
         double standardDeviation = 0, maxStandardDeviation = Double.MIN_VALUE, minStandardDeviation = Double.MAX_VALUE;
 
@@ -92,11 +92,18 @@ public class DriftDetector {
                     standardDeviation = (minStandardDeviation + maxStandardDeviation) / 2;
                 }
 
+                String color;
                 absoluteDifference = Math.abs(blockSummary - mean);
-                if (absoluteDifference >= driftCoefficient * standardDeviation) {
-                    System.out.println("\033[1;32m" + "*** CHANGE: "  + absoluteDifference + " ***\033[0m");
+                throshold = driftCoefficient * standardDeviation;
+                if (absoluteDifference >= throshold) {
+                    color = "\033[1;32m";
                     summaries.clear();
+                } else {
+                    color = "\033[1;31m";
                 }
+                System.out.println(color + "*** DIFF: "  + absoluteDifference +
+                        ", THRESHOLD: " + throshold + " ***\033[0m");
+
                 summaries.add(blockSummary);
             }
         } catch (NoSuchElementException e) {
@@ -121,6 +128,7 @@ public class DriftDetector {
         }
         summary /= numAttributes;
 
+        System.out.println();
         return summary;
     }
 
