@@ -32,7 +32,7 @@ public class DILCA {
             for (ImmutableList<String> record : database) {
                 for (int i = 0; i < numAttributes; i++) {
                     String value = record.get(i);
-                    if (!attributeDomains.get(i).containsKey(value)) {
+                    if (attributeDomains.get(i).containsKey(value)) {
                         attributeDomains.get(i).put(value, nextIndex[i]);
                         nextIndex[i]++;
                     }
@@ -41,7 +41,7 @@ public class DILCA {
 
             this.lazyCooccurrences = new int[numAttributes][][][];
             for (int i = 0; i < numAttributes; i++) {
-                this.lazyCooccurrences[i] = new int[numAttributes][][];
+                this.lazyCooccurrences[i] = new int[numAttributes - i][][];
             }
         }
 
