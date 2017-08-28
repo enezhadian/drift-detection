@@ -54,8 +54,6 @@ class DatabaseStatistics {
         }
 
         // Count co-occurrences.
-        // Get rid of half of the co-occurrences.
-        // TODO: Play around with the order of looping to find out whether they differ in speed.
         int firstIndex, secondIndex;
 
         for (ImmutableList<String> record : database) {
@@ -69,8 +67,8 @@ class DatabaseStatistics {
         }
     }
 
-    public int[][] cooccurrencesFor(int firstAttributeIndex, int secondAttributeIndex) {
-        return cooccurrences[firstAttributeIndex][secondAttributeIndex];
+    public int[][] cooccurrencesFor(int lesserAttributeIndex, int greaterAttributeIndex) {
+        return cooccurrences[lesserAttributeIndex][greaterAttributeIndex];
     }
 
     public int numAttributes() {

@@ -33,8 +33,11 @@ public class DILCA {
 
         double totalContextDomainSizes = 0;
         for (int attributeIndex : contextAttributeIndexes) {
-            // TODO: Make sure the order of indexes are fine.
-            cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
+            if (attributeIndex <= targetAttributeIndex) {
+                cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
+            } else {
+                cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex);
+            }
 
             // Calculate total sum of domain sizes for all attributes.
             totalContextDomainSizes += cooccurrences.length;
@@ -112,53 +115,78 @@ public class DILCA {
     private static double symmetricalUncertainty(DatabaseStatistics statistics,
                                                  int targetAttributeIndex,
                                                  int attributeIndex) {
-        int[][] targetOccurrences = statistics.cooccurrencesFor(targetAttributeIndex, targetAttributeIndex);
-        int[][] attributeOccurrences = statistics.cooccurrencesFor(attributeIndex, attributeIndex);
-        // TODO: Make sure the order of indexes are fine.
-        int[][] cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex);
+        if (targetAttributeIndex == attributeIndex) {
+            return 0;
+        }
+
+        int firstIndex, secondIndex;
+        if (targetAttributeIndex < attributeIndex) {
+            firstIndex = targetAttributeIndex;
+            secondIndex = attributeIndex;
+        } else {
+            firstIndex = attributeIndex;
+            secondIndex = targetAttributeIndex;
+        }
+
+        int[][] firstAttributeOccurrences = statistics.cooccurrencesFor(firstIndex, firstIndex);
+        int[][] secondAttributeOccurrences = statistics.cooccurrencesFor(secondIndex, secondIndex);
+        int[][] cooccurrences = statistics.cooccurrencesFor(firstIndex, secondIndex);
 
         double probability;
 
-        double targetEntropy = 0;
+        double firstAttributeEntropy = 0;
         // Calculate target attribute's entropy.
-        double totalTargetOccurrences = 0;
-        for (int i = 0; i < targetOccurrences.length; i++) {
-            totalTargetOccurrences += targetOccurrences[i][i];
+        double firstAttributeTotalOccurrences = 0;
+        for (int i = 0; i < firstAttributeOccurrences.length; i++) {
+            firstAttributeTotalOccurrences += firstAttributeOccurrences[i][i];
         }
-        for (int i = 0; i < targetOccurrences.length; i++) {
-            probability = (double) targetOccurrences[i][i] / totalTargetOccurrences;
-            targetEntropy -= probability * Math.log(probability) / log2;
+        for (int i = 0; i < firstAttributeOccurrences.length; i++) {
+            probability = (double) firstAttributeOccurrences[i][i] / firstAttributeTotalOccurrences;
+            firstAttributeEntropy -= probability * Math.log(probability) / log2;
         }
 
-        double attributeEntropy = 0;
+        double secondAttributeEntropy = 0;
         // Calculate attribute's entropy.
-        double totalAttributeOccurrences = 0;
-        for (int i = 0; i < attributeOccurrences.length; i++) {
-            totalAttributeOccurrences += attributeOccurrences[i][i];
+        double secondAttributeTotalOccurrences = 0;
+        for (int i = 0; i < secondAttributeOccurrences.length; i++) {
+            secondAttributeTotalOccurrences += secondAttributeOccurrences[i][i];
         }
-        for (int i = 0; i < attributeOccurrences.length; i++) {
-            probability = (double) attributeOccurrences[i][i] / totalAttributeOccurrences;
-            attributeEntropy -= probability * Math.log(probability) / log2;
+        for (int i = 0; i < secondAttributeOccurrences.length; i++) {
+            probability = (double) secondAttributeOccurrences[i][i] / secondAttributeTotalOccurrences;
+            secondAttributeEntropy -= probability * Math.log(probability) / log2;
         }
 
-        double conditionalEntropy = 0;
-        // Calculate conditional entropy of target attribute with respect to the given attribute.
-        for (int i = 0; i < cooccurrences.length; i++) {
-            int[] valueCooccurrences = cooccurrences[i];
+        double attributeValueTotalOccurrences, conditionalEntropy, targetEntropy, attributeEnropy;
+        if (targetAttributeIndex < attributeIndex) {
+            targetEntropy = firstAttributeEntropy;
+            attributeEnropy = secondAttributeEntropy;
 
-            double totalValueCooccurrences = 0;
-            for (int j = 0; j < valueCooccurrences.length; j++) {
-                totalValueCooccurrences += valueCooccurrences[j];
+            // Calculate conditional entropy of target attribute with respect to the given attribute.
+            conditionalEntropy = 0;
+            for (int i = 0; i < cooccurrences.length; i++) {
+                for (int j = 0; j < cooccurrences[i].length; j++) {
+                    attributeValueTotalOccurrences = secondAttributeOccurrences[j][j];
+                    probability = (double) cooccurrences[i][j] / attributeValueTotalOccurrences;
+                    conditionalEntropy -= probability * Math.log(probability) / log2;
+                }
             }
+        } else {
+            targetEntropy = secondAttributeEntropy;
+            attributeEnropy = firstAttributeEntropy;
 
-            for (int j = 0; j < valueCooccurrences.length; j++) {
-                probability = (double) valueCooccurrences[j] / totalValueCooccurrences;
-                conditionalEntropy -= probability * Math.log(probability) / log2;
+            // Calculate conditional entropy of target attribute with respect to the given attribute.
+            conditionalEntropy = 0;
+            for (int i = 0; i < cooccurrences.length; i++) {
+                attributeValueTotalOccurrences = firstAttributeOccurrences[i][i];
+                for (int j = 0; j < cooccurrences[i].length; j++) {
+                    probability = (double) cooccurrences[i][j] / attributeValueTotalOccurrences;
+                    conditionalEntropy -= probability * Math.log(probability) / log2;
+                }
             }
         }
 
         // Calculate symmetrical uncertainty.
-        return (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEntropy);
+        return (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEnropy);
     }
 
     /*--------------------------------------------------------------------------*
