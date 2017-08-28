@@ -12,95 +12,10 @@ public class DILCA {
      *                        STATIC MEMBERS AND METHODS                        *
      *--------------------------------------------------------------------------*/
 
-    static class DatabaseStatistics {
-
-        public DatabaseStatistics(ImmutableList<ImmutableList<String>> database) {
-            if (database.size() == 0) {
-                throw new IllegalArgumentException("Database cannot be empty.");
-            }
-
-            this.database = database;
-            this.numAttributes = database.get(0).size();
-
-            this.attributeDomains = new ArrayList<>(numAttributes);
-            for (int i = 0; i < numAttributes; i++) {
-                attributeDomains.add(new HashMap<>());
-            }
-
-            // Find domain of all attributes.
-            int[] nextIndex = new int[numAttributes];
-            for (ImmutableList<String> record : database) {
-                for (int i = 0; i < numAttributes; i++) {
-                    String value = record.get(i);
-                    if (!attributeDomains.get(i).containsKey(value)) {
-                        attributeDomains.get(i).put(value, nextIndex[i]);
-                        nextIndex[i]++;
-                    }
-                }
-            }
-
-            // Initialize co-occurrences data structure with zero.
-            int firstDomainSize, secondDomainSize;
-
-            cooccurrences = new int[numAttributes][][][];
-            for (int i = 0; i < numAttributes; i++) {
-                cooccurrences[i] = new int[numAttributes][][];
-                firstDomainSize = attributeDomains.get(i).size();
-
-                for (int j = 0; j < numAttributes; j++) {
-                    cooccurrences[i][j] = new int[firstDomainSize][];
-                    secondDomainSize = attributeDomains.get(j).size();
-
-                    for (int k = 0; k < firstDomainSize; k++) {
-                        cooccurrences[i][j][k] = new int[secondDomainSize];
-                    }
-                }
-            }
-
-            // Count co-occurrences.
-            // Get rid of half of the co-occurrences.
-            // TODO: Play around with the order of looping to find out whether they differ in speed.
-            int firstIndex, secondIndex;
-
-            for (ImmutableList<String> record : database) {
-                for (int i = 0; i < numAttributes; i++) {
-                    for (int j = 0; j < numAttributes; j++) {
-                        firstIndex = attributeDomains.get(i).get(record.get(i));
-                        secondIndex = attributeDomains.get(j).get(record.get(j));
-
-                        this.cooccurrences[i][j][firstIndex][secondIndex]++;
-                        this.cooccurrences[j][i][secondIndex][firstIndex]++;
-                    }
-                }
-            }
-        }
-
-        public int[][] cooccurrencesFor(int firstAttributeIndex, int secondAttributeIndex) {
-            return cooccurrences[firstAttributeIndex][secondAttributeIndex];
-        }
-
-        public int domainSize(int attributeIndex) {
-            return attributeDomains.get(attributeIndex).size();
-        }
-
-        private final ImmutableList<ImmutableList<String>> database;
-        private final int numAttributes;
-        private final List<Map<String, Integer>> attributeDomains;
-        private final int[][][][] cooccurrences;
-
-    }
-
-    public static DILCA distanceMatrixFor(ImmutableList<ImmutableList<String>> database,
+    public static DILCA distanceMatrixFor(DatabaseStatistics statistics,
                                           int targetAttributeIndex) {
         System.out.print(".");
         System.out.flush();
-
-        if (database.size() == 0) {
-            throw new IllegalArgumentException("Empty database.");
-        }
-
-        // Calculate statistics.
-        DatabaseStatistics statistics = new DatabaseStatistics(database);
 
         // Find context attributes.
         Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(statistics, targetAttributeIndex);
@@ -118,6 +33,7 @@ public class DILCA {
 
         double totalContextDomainSizes = 0;
         for (int attributeIndex : contextAttributeIndexes) {
+            // TODO: Make sure the order of indexes are fine.
             cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
 
             // Calculate total sum of domain sizes for all attributes.
@@ -152,7 +68,7 @@ public class DILCA {
 
     private static Set<Integer> contextAttributeIndexesFor(DatabaseStatistics statistics,
                                                            int targetAttributeIndex) {
-        int numAttributes = statistics.numAttributes;
+        int numAttributes = statistics.numAttributes();
         List<Double> uncertainties = new ArrayList<>(numAttributes);
         List<Integer> indexes = new ArrayList<>(numAttributes);
 
@@ -198,6 +114,7 @@ public class DILCA {
                                                  int attributeIndex) {
         int[][] targetOccurrences = statistics.cooccurrencesFor(targetAttributeIndex, targetAttributeIndex);
         int[][] attributeOccurrences = statistics.cooccurrencesFor(attributeIndex, attributeIndex);
+        // TODO: Make sure the order of indexes are fine.
         int[][] cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex);
 
         double probability;

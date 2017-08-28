@@ -120,11 +120,12 @@ public class DriftDetector {
             throw new IllegalArgumentException("Block should not be empty.");
         }
 
-        int numAttributes = block.get(0).size();
+        DatabaseStatistics statistics = new DatabaseStatistics(block);
+        int numAttributes = statistics.numAttributes();
 
         double summary = 0;
         for (int attribute = 0; attribute < numAttributes; attribute++) {
-            summary += DILCA.distanceMatrixFor(block, attribute).normalizedSquaredSumRoot();
+            summary += DILCA.distanceMatrixFor(statistics, attribute).normalizedSquaredSumRoot();
         }
         summary /= numAttributes;
 
