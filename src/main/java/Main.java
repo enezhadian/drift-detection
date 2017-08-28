@@ -33,7 +33,7 @@ public class Main {
     }
 
     public static void runCDCStream() throws Exception {
-        final int blockSize = 1000;
+        final int blockSize = 10000;
         final double driftCoefficient = 3;
 
         CategoricalRecordStreamReader stream = new CategoricalRecordStreamReader("data/kddcup_10_percent.txt", false);

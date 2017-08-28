@@ -27,14 +27,26 @@ import com.google.common.collect.ImmutableSet;
 
 public class DILCA {
 
+    public static long time1 = 0;
+    public static long time2 = 0;
+    public static long time3 = 0;
+
+    public static long time4 = 0;
+    public static long time5 = 0;
+    public static long time6 = 0;
+
     /*--------------------------------------------------------------------------*
      *                        STATIC MEMBERS AND METHODS                        *
      *--------------------------------------------------------------------------*/
 
+    // TODO: Store every retrieved attribute in a local variable.
     public static DILCA distanceMatrixFor(DatabaseStatistics statistics,
                                           int targetAttributeIndex) {
-        System.out.print(".");
-        System.out.flush();
+//        System.out.print(".");
+//        System.out.flush();
+
+        long start;
+        System.out.println(time1 + " " + time2 + " " + time3 + " " + time4 + " " + time5 + " " + time6);
 
         // Find context attributes.
         Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(statistics, targetAttributeIndex);
@@ -49,35 +61,26 @@ public class DILCA {
         }
 
         int[][] cooccurrences;
-        int[] valueCooccurrences;
         double[] valueDistances;
 
+        // TODO: Make this part faster.
         for (int attributeIndex : contextAttributeIndexes) {
-            if (attributeIndex <= targetAttributeIndex) {
-                cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
-                // Calculate the sum of squared differences over all the values of current context attribute.
-                for (int i = 0; i < cooccurrences.length; i++) {
-                    for (int j = 0; j < targetDomainSize; j++) {
-                        for (int k = j + 1; k < targetDomainSize; k++) {
-                            double difference = cooccurrences[i][j] - cooccurrences[i][k];
-                            distances[j][k - j - 1] += difference * difference;
-                        }
-                    }
-                }
-            } else {
-                cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex);
-                // Calculate the sum of squared differences over all the values of current context attribute.
+            start = System.currentTimeMillis();
+            // TODO: Also check the other order.
+            cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
+            // Calculate the sum of squared differences over all the values of current context attribute.
+            for (int i = 0; i < cooccurrences.length; i++) {
                 for (int j = 0; j < targetDomainSize; j++) {
-                    for (int i = 0; i < cooccurrences[j].length; i++) {
-                        for (int k = j + 1; k < targetDomainSize; k++) {
-                            double difference = cooccurrences[j][i] - cooccurrences[k][i];
-                            distances[j][k - j - 1] += difference * difference;
-                        }
+                    for (int k = j + 1; k < targetDomainSize; k++) {
+                        double difference = cooccurrences[i][j] - cooccurrences[i][k];
+                        distances[j][k - j - 1] += difference * difference;
                     }
                 }
             }
+            time1 += System.currentTimeMillis() - start;
         }
 
+        start = System.currentTimeMillis();
         // Calculate total sum of domain sizes for all attributes.
         double totalContextDomainSizes = 0;
         for (int i = 0; i < numAttributes; i++) {
@@ -87,11 +90,11 @@ public class DILCA {
         // Normalize sum of squared differences.
         for  (int i = 0; i < distances.length; i++) {
             valueDistances = distances[i];
-
             for (int j = 0; j < valueDistances.length; j++) {
                 valueDistances[j] = Math.sqrt(valueDistances[j] / totalContextDomainSizes);
             }
         }
+        time3 += System.currentTimeMillis() - start;
 
         return new DILCA(distances);
     }
@@ -148,74 +151,65 @@ public class DILCA {
             return 0;
         }
 
-        int firstIndex, secondIndex;
-        if (targetAttributeIndex < attributeIndex) {
-            firstIndex = targetAttributeIndex;
-            secondIndex = attributeIndex;
-        } else {
-            firstIndex = attributeIndex;
-            secondIndex = targetAttributeIndex;
-        }
+        long start;
 
-        int[][] firstAttributeOccurrences = statistics.cooccurrencesFor(firstIndex, firstIndex);
-        int[][] secondAttributeOccurrences = statistics.cooccurrencesFor(secondIndex, secondIndex);
-        int[][] cooccurrences = statistics.cooccurrencesFor(firstIndex, secondIndex);
+        int[][] targetOccurrences = statistics.cooccurrencesFor(targetAttributeIndex, targetAttributeIndex);
+        int[][] attributeOccurrences = statistics.cooccurrencesFor(attributeIndex, attributeIndex);
+        /* int[][] cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex); */
+        int[][] cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
 
         double probability;
 
-        double firstAttributeEntropy = 0;
+        start = System.currentTimeMillis();
+        double targetEntropy = 0;
         // Calculate target attribute's entropy.
-        double firstAttributeTotalOccurrences = 0;
-        for (int i = 0; i < firstAttributeOccurrences.length; i++) {
-            firstAttributeTotalOccurrences += firstAttributeOccurrences[i][i];
+        double targetTotalOccurrences = 0;
+        for (int i = 0; i < targetOccurrences.length; i++) {
+            targetTotalOccurrences += targetOccurrences[i][i];
         }
-        for (int i = 0; i < firstAttributeOccurrences.length; i++) {
-            probability = (double) firstAttributeOccurrences[i][i] / firstAttributeTotalOccurrences;
-            firstAttributeEntropy -= probability * Math.log(probability) / log2;
+        for (int i = 0; i < targetOccurrences.length; i++) {
+            probability = (double) targetOccurrences[i][i] / targetTotalOccurrences;
+            targetEntropy -= probability * Math.log(probability) / log2;
         }
+        time4 += System.currentTimeMillis() - start;
 
-        double secondAttributeEntropy = 0;
+        start = System.currentTimeMillis();
+        double attributeEntropy = 0;
         // Calculate attribute's entropy.
-        double secondAttributeTotalOccurrences = 0;
-        for (int i = 0; i < secondAttributeOccurrences.length; i++) {
-            secondAttributeTotalOccurrences += secondAttributeOccurrences[i][i];
+        double attributeTotalOccurrences = 0;
+        for (int i = 0; i < attributeOccurrences.length; i++) {
+            attributeTotalOccurrences += attributeOccurrences[i][i];
         }
-        for (int i = 0; i < secondAttributeOccurrences.length; i++) {
-            probability = (double) secondAttributeOccurrences[i][i] / secondAttributeTotalOccurrences;
-            secondAttributeEntropy -= probability * Math.log(probability) / log2;
+        for (int i = 0; i < attributeOccurrences.length; i++) {
+            probability = (double) attributeOccurrences[i][i] / attributeTotalOccurrences;
+            attributeEntropy -= probability * Math.log(probability) / log2;
         }
+        time5 += System.currentTimeMillis() - start;
 
-        double attributeValueTotalOccurrences, conditionalEntropy, targetEntropy, attributeEnropy;
-        if (targetAttributeIndex < attributeIndex) {
-            targetEntropy = firstAttributeEntropy;
-            attributeEnropy = secondAttributeEntropy;
-
-            // Calculate conditional entropy of target attribute with respect to the given attribute.
-            conditionalEntropy = 0;
-            for (int i = 0; i < cooccurrences.length; i++) {
-                for (int j = 0; j < cooccurrences[i].length; j++) {
-                    attributeValueTotalOccurrences = secondAttributeOccurrences[j][j];
-                    probability = (double) cooccurrences[i][j] / attributeValueTotalOccurrences;
-                    conditionalEntropy -= probability * Math.log(probability) / log2;
-                }
+        start = System.currentTimeMillis();
+        /* // Calculate conditional entropy of target attribute with respect to the given attribute.
+        double conditionalEntropy = 0;
+        for (int i = 0; i < cooccurrences.length; i++) {
+            double attributeValueTotalOccurrences = targetOccurrences[i][i];
+            for (int j = 0; j < cooccurrences[i].length; j++) {
+                probability = (double) cooccurrences[i][j] / attributeValueTotalOccurrences;
+                conditionalEntropy -= probability * Math.log(probability) / log2;
             }
-        } else {
-            targetEntropy = secondAttributeEntropy;
-            attributeEnropy = firstAttributeEntropy;
-
-            // Calculate conditional entropy of target attribute with respect to the given attribute.
-            conditionalEntropy = 0;
-            for (int i = 0; i < cooccurrences.length; i++) {
-                attributeValueTotalOccurrences = firstAttributeOccurrences[i][i];
-                for (int j = 0; j < cooccurrences[i].length; j++) {
-                    probability = (double) cooccurrences[i][j] / attributeValueTotalOccurrences;
-                    conditionalEntropy -= probability * Math.log(probability) / log2;
-                }
+        } */
+        // Calculate conditional entropy of target attribute with respect to the given attribute.
+        // TODO: Make this part faster.
+        double conditionalEntropy = 0;
+        for (int i = 0; i < cooccurrences.length; i++) {
+            for (int j = 0; j < cooccurrences[i].length; j++) {
+                double attributeValueTotalOccurrences = attributeOccurrences[i][i];
+                probability = (double) cooccurrences[i][j] / attributeValueTotalOccurrences;
+                conditionalEntropy -= probability * Math.log(probability) / log2;
             }
         }
+        time6 += System.currentTimeMillis() - start;
 
         // Calculate symmetrical uncertainty.
-        return (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEnropy);
+        return (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEntropy);
     }
 
     /*--------------------------------------------------------------------------*

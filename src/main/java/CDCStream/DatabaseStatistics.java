@@ -63,7 +63,7 @@ class DatabaseStatistics {
             cooccurrences[i] = new int[numAttributes][][];
             firstDomainSize = attributeDomains.get(i).size();
 
-            for (int j = i; j < numAttributes; j++) {
+            for (int j = 0; j < numAttributes; j++) {
                 cooccurrences[i][j] = new int[firstDomainSize][];
                 secondDomainSize = attributeDomains.get(j).size();
 
@@ -78,7 +78,7 @@ class DatabaseStatistics {
 
         for (ImmutableList<String> record : database) {
             for (int i = 0; i < numAttributes; i++) {
-                for (int j = i; j < numAttributes; j++) {
+                for (int j = 0; j < numAttributes; j++) {
                     firstIndex = attributeDomains.get(i).get(record.get(i));
                     secondIndex = attributeDomains.get(j).get(record.get(j));
                     this.cooccurrences[i][j][firstIndex][secondIndex]++;
