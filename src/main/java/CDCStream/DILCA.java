@@ -39,52 +39,44 @@ public class DILCA {
                 }
             }
 
-            this.lazyCooccurrences = new int[numAttributes][][][];
+            // Initialize co-occurrences data structure with zero.
+            int firstDomainSize, secondDomainSize;
+
+            cooccurrences = new int[numAttributes][][][];
             for (int i = 0; i < numAttributes; i++) {
-                this.lazyCooccurrences[i] = new int[numAttributes][][];
+                cooccurrences[i] = new int[numAttributes][][];
+                firstDomainSize = attributeDomains.get(i).size();
+
+                for (int j = 0; j < numAttributes; j++) {
+                    cooccurrences[i][j] = new int[firstDomainSize][];
+                    secondDomainSize = attributeDomains.get(j).size();
+
+                    for (int k = 0; k < firstDomainSize; k++) {
+                        cooccurrences[i][j][k] = new int[secondDomainSize];
+                    }
+                }
+            }
+
+            // Count co-occurrences.
+            // Get rid of half of the co-occurrences.
+            // TODO: Play around with the order of looping to find out whether they differ in speed.
+            int firstIndex, secondIndex;
+
+            for (ImmutableList<String> record : database) {
+                for (int i = 0; i < numAttributes; i++) {
+                    for (int j = 0; j < numAttributes; j++) {
+                        firstIndex = attributeDomains.get(i).get(record.get(i));
+                        secondIndex = attributeDomains.get(j).get(record.get(j));
+
+                        this.cooccurrences[i][j][firstIndex][secondIndex]++;
+                        this.cooccurrences[j][i][secondIndex][firstIndex]++;
+                    }
+                }
             }
         }
 
         public int[][] cooccurrencesFor(int firstAttributeIndex, int secondAttributeIndex) {
-            // Make sure `firstAttributeIndex` is the smaller index.
-            /* if (firstAttributeIndex > secondAttributeIndex) {
-                int temp = firstAttributeIndex;
-                firstAttributeIndex = secondAttributeIndex;
-                secondAttributeIndex = temp;
-            } */
-
-            int[][] cooccurrenceMatrix = lazyCooccurrences[firstAttributeIndex][secondAttributeIndex];
-
-            if (null == cooccurrenceMatrix) {
-                int firstAttributeDomainSize = attributeDomains.get(firstAttributeIndex).size();
-                int secondAttributeDomainSize = attributeDomains.get(secondAttributeIndex).size();
-
-                cooccurrenceMatrix = new int[firstAttributeDomainSize][];
-                for (int i = 0; i < firstAttributeDomainSize; i++) {
-                    cooccurrenceMatrix[i] = new int[secondAttributeDomainSize];
-                }
-
-                int[][] cooccurrenceTransposeMatrix = new int[secondAttributeDomainSize][];
-                for (int i = 0; i < secondAttributeDomainSize; i++) {
-                    cooccurrenceTransposeMatrix[i] = new int[firstAttributeDomainSize];
-                }
-
-
-                for (ImmutableList<String> record : database) {
-                    String firstAttributeValue = record.get(firstAttributeIndex);
-                    String secondAttributeValue = record.get(secondAttributeIndex);
-
-                    int firstValueIndex = attributeDomains.get(firstAttributeIndex).get(firstAttributeValue);
-                    int secondValueIndex = attributeDomains.get(secondAttributeIndex).get(secondAttributeValue);
-
-                    cooccurrenceMatrix[firstValueIndex][secondValueIndex]++;
-                    cooccurrenceTransposeMatrix[secondValueIndex][firstValueIndex]++;
-                }
-
-                lazyCooccurrences[firstAttributeIndex][secondAttributeIndex] = cooccurrenceMatrix;
-            }
-
-            return cooccurrenceMatrix;
+            return cooccurrences[firstAttributeIndex][secondAttributeIndex];
         }
 
         public int domainSize(int attributeIndex) {
@@ -94,7 +86,7 @@ public class DILCA {
         private final ImmutableList<ImmutableList<String>> database;
         private final int numAttributes;
         private final List<Map<String, Integer>> attributeDomains;
-        private final int[][][][] lazyCooccurrences;
+        private final int[][][][] cooccurrences;
 
     }
 
