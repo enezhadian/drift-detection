@@ -39,8 +39,10 @@ public class DILCA {
         // Find context attributes.
         Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(statistics, targetAttributeIndex);
 
-        // Build the distance matrix.
+        int numAttributes = statistics.numAttributes();
         int targetDomainSize = statistics.domainSize(targetAttributeIndex);
+
+        // Build the distance matrix.
         double[][] distances = new double[targetDomainSize - 1][];
         for (int i = 0; i < distances.length; i++) {
             distances[i] = new double[targetDomainSize - i - 1];
@@ -50,28 +52,36 @@ public class DILCA {
         int[] valueCooccurrences;
         double[] valueDistances;
 
-        double totalContextDomainSizes = 0;
         for (int attributeIndex : contextAttributeIndexes) {
             if (attributeIndex <= targetAttributeIndex) {
                 cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
+                // Calculate the sum of squared differences over all the values of current context attribute.
+                for (int i = 0; i < cooccurrences.length; i++) {
+                    for (int j = 0; j < targetDomainSize; j++) {
+                        for (int k = j + 1; k < targetDomainSize; k++) {
+                            double difference = cooccurrences[i][j] - cooccurrences[i][k];
+                            distances[j][k - j - 1] += difference * difference;
+                        }
+                    }
+                }
             } else {
                 cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex);
-            }
-
-            // Calculate total sum of domain sizes for all attributes.
-            totalContextDomainSizes += cooccurrences.length;
-
-            // Calculate the sum of squared differences over all the values of current context attribute.
-            for (int i = 0; i < cooccurrences.length; i++) {
-                valueCooccurrences = cooccurrences[i];
-
-                for (int j = 0; j < valueCooccurrences.length; j++) {
-                    for (int k = j + 1; k < valueCooccurrences.length; k++) {
-                        double difference = valueCooccurrences[j] - valueCooccurrences[k];
-                        distances[j][k - j - 1] += difference * difference;
+                // Calculate the sum of squared differences over all the values of current context attribute.
+                for (int j = 0; j < targetDomainSize; j++) {
+                    for (int i = 0; i < cooccurrences[j].length; i++) {
+                        for (int k = j + 1; k < targetDomainSize; k++) {
+                            double difference = cooccurrences[j][i] - cooccurrences[k][i];
+                            distances[j][k - j - 1] += difference * difference;
+                        }
                     }
                 }
             }
+        }
+
+        // Calculate total sum of domain sizes for all attributes.
+        double totalContextDomainSizes = 0;
+        for (int i = 0; i < numAttributes; i++) {
+            totalContextDomainSizes += statistics.domainSize(i);
         }
 
         // Normalize sum of squared differences.
