@@ -42,11 +42,11 @@ public class DILCA {
     // TODO: Store every retrieved attribute in a local variable.
     public static DILCA distanceMatrixFor(DatabaseStatistics statistics,
                                           int targetAttributeIndex) {
-//        System.out.print(".");
-//        System.out.flush();
+        System.out.print(".");
+        System.out.flush();
 
         long start;
-        System.out.println(time1 + " " + time2 + " " + time3 + " " + time4 + " " + time5 + " " + time6);
+        // System.out.println(time1 + " " + time2 + " " + time3 + " " + time4 + " " + time5 + " " + time6);
 
         // Find context attributes.
         Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(statistics, targetAttributeIndex);
@@ -158,7 +158,7 @@ public class DILCA {
         /* int[][] cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex); */
         int[][] cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
 
-        double probability;
+        double probability, occurrences, attributeValueTotalOccurrences;
 
         start = System.currentTimeMillis();
         double targetEntropy = 0;
@@ -168,7 +168,11 @@ public class DILCA {
             targetTotalOccurrences += targetOccurrences[i][i];
         }
         for (int i = 0; i < targetOccurrences.length; i++) {
-            probability = (double) targetOccurrences[i][i] / targetTotalOccurrences;
+            occurrences = targetOccurrences[i][i];
+            if (0 == occurrences) {
+                continue;
+            }
+            probability = occurrences / targetTotalOccurrences;
             targetEntropy -= probability * Math.log(probability) / log2;
         }
         time4 += System.currentTimeMillis() - start;
@@ -181,7 +185,11 @@ public class DILCA {
             attributeTotalOccurrences += attributeOccurrences[i][i];
         }
         for (int i = 0; i < attributeOccurrences.length; i++) {
-            probability = (double) attributeOccurrences[i][i] / attributeTotalOccurrences;
+            occurrences = attributeOccurrences[i][i];
+            if (0 == occurrences) {
+                continue;
+            }
+            probability = occurrences / attributeTotalOccurrences;
             attributeEntropy -= probability * Math.log(probability) / log2;
         }
         time5 += System.currentTimeMillis() - start;
@@ -201,15 +209,23 @@ public class DILCA {
         double conditionalEntropy = 0;
         for (int i = 0; i < cooccurrences.length; i++) {
             for (int j = 0; j < cooccurrences[i].length; j++) {
-                double attributeValueTotalOccurrences = attributeOccurrences[i][i];
-                probability = (double) cooccurrences[i][j] / attributeValueTotalOccurrences;
+                occurrences = cooccurrences[i][j];
+                if (0 == occurrences) {
+                    continue;
+                }
+                attributeValueTotalOccurrences = attributeOccurrences[i][i];
+                probability = occurrences / attributeValueTotalOccurrences;
                 conditionalEntropy -= probability * Math.log(probability) / log2;
             }
         }
         time6 += System.currentTimeMillis() - start;
 
         // Calculate symmetrical uncertainty.
-        return (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEntropy);
+        if (0 == targetEntropy && 0 == attributeEntropy) {
+            return 0;
+        } else {
+            return (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEntropy);
+        }
     }
 
     /*--------------------------------------------------------------------------*
