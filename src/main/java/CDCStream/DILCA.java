@@ -247,7 +247,7 @@ public class DILCA {
         if (0 == sum) {
             return 0;
         } else {
-            return (2 * Math.sqrt(sum)) / (distances.length * (distances.length - 1));
+            return (2 * Math.sqrt(sum)) / (distances.length * (distances.length + 1));
         }
     }
 
