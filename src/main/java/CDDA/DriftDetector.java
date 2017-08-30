@@ -26,13 +26,17 @@ import java.util.NoSuchElementException;
 
 import com.google.common.collect.ImmutableList;
 
-import DataStreamReader.TabularStreamReader;
+import DataStreamReader.CategoricalRecordStreamReader;
 import com.google.common.collect.Sets;
 
 
 public class DriftDetector {
 
-    public DriftDetector(TabularStreamReader stream, int blockSize, double minChangeDegree) {
+    /*--------------------------------------------------------------------------*
+     *                       INSTANCE MEMBERS AND METHODS                       *
+     *--------------------------------------------------------------------------*/
+
+    public DriftDetector(CategoricalRecordStreamReader stream, int blockSize, double minChangeDegree) {
         this.stream = stream;
         this.blockSize = blockSize;
         this.minChangeDegree = minChangeDegree;
@@ -59,7 +63,6 @@ public class DriftDetector {
                     color = "\033[1;31m";
                 }
 
-                // TODO: Report concept drift in more useful way.
                 System.out.println(color + "*** CHANGE: "  + changeDegree + " ***\033[0m");
 
                 lastBlock = currentBlock;
@@ -69,7 +72,7 @@ public class DriftDetector {
         }
     }
 
-    private final TabularStreamReader stream;
+    private final CategoricalRecordStreamReader stream;
     private final int blockSize;
     private final double minChangeDegree;
 
@@ -98,14 +101,14 @@ public class DriftDetector {
             secondEquivalents.clear();
 
             // Calculate size of each equivalent class for the first block.
-            for (ImmutableList<String> row : firstBlock) {
-                String value = row.get(attribute);
+            for (ImmutableList<String> record : firstBlock) {
+                String value = record.get(attribute);
                 firstEquivalents.put(value, firstEquivalents.getOrDefault(value, 0) + 1);
             }
 
             // Calculate size of each equivalent class for the second block.
-            for (ImmutableList<String> row : secondBlock) {
-                String value = row.get(attribute);
+            for (ImmutableList<String> record : secondBlock) {
+                String value = record.get(attribute);
                 secondEquivalents.put(value, secondEquivalents.getOrDefault(value, 0) + 1);
             }
 

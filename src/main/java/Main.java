@@ -30,11 +30,19 @@ public class Main {
         final int blockSize = 10000;
         final double minChangeDegree = 0.1;
 
-        TabularStreamReader stream = new TabularStreamReader("data/kddcup_10_percent.txt", false);
+        CategoricalRecordStreamReader stream = new CategoricalRecordStreamReader("data/kddcup_10_percent.txt", false);
         new CDDA.DriftDetector(stream, blockSize, minChangeDegree).run();
     }
 
-    static void runStreamKrimp() throws Exception {
+    public static void runCDCStream() throws Exception {
+        final int blockSize = 10000;
+        final double driftCoefficient = 3;
+
+        CategoricalRecordStreamReader stream = new CategoricalRecordStreamReader("data/kddcup_10_percent.txt", false);
+        new CDCStream.DriftDetector(stream, blockSize, driftCoefficient).run();
+    }
+
+    public static void runStreamKrimp() throws Exception {
         final String inputFilePath = "data/wine.txt";
         final String delimiterRegex = "\\s";
         final int numItems = 68;
@@ -50,14 +58,14 @@ public class Main {
             items.add(Integer.toString(i));
         }
 
-        ItemsetStreamReader stream =
-                new ItemsetStreamReader(inputFilePath, delimiterRegex, items);
+        ItemsetStreamReader stream = new ItemsetStreamReader(inputFilePath, delimiterRegex, items);
         new StreamKrimp.DriftDetector(stream, blockSize, minFreq, maxIR, minCTD, numSamples, nSigma).run();
         System.out.println("Processed " + stream.read + " transactions.");
     }
 
     public static void main(String[] args) throws Exception {
-        // runCDDA();
+        //runCDDA();
+        //runCDCStream();
         runStreamKrimp();
     }
 
