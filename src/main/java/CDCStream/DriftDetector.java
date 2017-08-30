@@ -58,6 +58,7 @@ public class DriftDetector {
                 stream.discard(block.size());
 
                 summaries.add(summaryOf(block));
+                System.out.println("\033[1;31m*** Collecting information ***\033[0m");
             }
 
             while (true) {
