@@ -32,15 +32,16 @@ import org.apache.commons.csv.*;
 
 
 
-public final class TabularStreamReader extends DataStreamReader<ImmutableList<String>> {
+public final class CategoricalRecordStreamReader extends DataStreamReader<ImmutableList<String>> {
 
     /*--------------------------------------------------------------------------*
      *                       INSTANCE MEMBERS AND METHODS                       *
      *--------------------------------------------------------------------------*/
 
-    public TabularStreamReader(String path, boolean hasHeader) throws IOException {
+    // TODO: Add support for all CSV file formats.
+    public CategoricalRecordStreamReader(String path, boolean hasHeader) throws IOException {
         CSVParser parser = CSVParser.parse(new File(path), Charset.forName("UTF-8"), CSVFormat.RFC4180);
-        this.records = parser.iterator();
+        this.csvRecords = parser.iterator();
 
         if (hasHeader) {
             skipLines(1);
@@ -61,12 +62,12 @@ public final class TabularStreamReader extends DataStreamReader<ImmutableList<St
             maxSize -= head.size();
         }
 
-        for (int size = 0; size < maxSize && records.hasNext(); size++) {
-            ImmutableList.Builder<String> rowBuilder = ImmutableList.builder();
-            for (String value : records.next()) {
-                rowBuilder.add(value);
+        for (int size = 0; size < maxSize && csvRecords.hasNext(); size++) {
+            ImmutableList.Builder<String> recordBuilder = ImmutableList.builder();
+            for (String value : csvRecords.next()) {
+                recordBuilder.add(value);
             }
-            headBuilder.add(rowBuilder.build());
+            headBuilder.add(recordBuilder.build());
         }
 
         head = headBuilder.build();
@@ -79,11 +80,11 @@ public final class TabularStreamReader extends DataStreamReader<ImmutableList<St
     @Override
     protected void skipLines(int maxSize) {
         // Skip `maxSize` records.
-        for (int size = 0; size < maxSize && records.hasNext(); size++) {
-            records.next();
+        for (int size = 0; size < maxSize && csvRecords.hasNext(); size++) {
+            csvRecords.next();
         }
     }
 
-    private final Iterator<CSVRecord> records;
+    private final Iterator<CSVRecord> csvRecords;
 
 }
