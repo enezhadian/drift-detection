@@ -27,14 +27,6 @@ import com.google.common.collect.ImmutableSet;
 
 public class DILCA {
 
-    public static long time1 = 0;
-    public static long time2 = 0;
-    public static long time3 = 0;
-
-    public static long time4 = 0;
-    public static long time5 = 0;
-    public static long time6 = 0;
-
     /*--------------------------------------------------------------------------*
      *                        STATIC MEMBERS AND METHODS                        *
      *--------------------------------------------------------------------------*/
@@ -42,12 +34,6 @@ public class DILCA {
     // TODO: Store every retrieved attribute in a local variable.
     public static DILCA distanceMatrixFor(DatabaseStatistics statistics,
                                           int targetAttributeIndex) {
-        System.out.print(".");
-        System.out.flush();
-
-        long start;
-        // System.out.println(time1 + " " + time2 + " " + time3 + " " + time4 + " " + time5 + " " + time6);
-
         // Find context attributes.
         Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(statistics, targetAttributeIndex);
 
@@ -64,7 +50,6 @@ public class DILCA {
 
         // TODO: Make this part faster.
         for (int attributeIndex : contextAttributeIndexes) {
-            start = System.currentTimeMillis();
             // TODO: Also check the other order.
             cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
             // Calculate the sum of squared differences over all the values of current context attribute.
@@ -76,10 +61,8 @@ public class DILCA {
                     }
                 }
             }
-            time1 += System.currentTimeMillis() - start;
         }
 
-        start = System.currentTimeMillis();
         // Calculate total sum of domain sizes for all attributes.
         double totalContextDomainSizes = 0;
         for (int attributeIndex : contextAttributeIndexes) {
@@ -93,7 +76,6 @@ public class DILCA {
                 valueDistances[j] = Math.sqrt(valueDistances[j] / totalContextDomainSizes);
             }
         }
-        time3 += System.currentTimeMillis() - start;
 
         return new DILCA(distances);
     }
@@ -148,8 +130,6 @@ public class DILCA {
             return 0;
         }
 
-        long start;
-
         int[][] targetOccurrences = statistics.cooccurrencesFor(targetAttributeIndex, targetAttributeIndex);
         int[][] attributeOccurrences = statistics.cooccurrencesFor(attributeIndex, attributeIndex);
         /* int[][] cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex); */
@@ -157,7 +137,6 @@ public class DILCA {
 
         double probability, occurrences, attributeValueTotalOccurrences;
 
-        start = System.currentTimeMillis();
         double targetEntropy = 0;
         // Calculate target attribute's entropy.
         double targetTotalOccurrences = 0;
@@ -172,9 +151,7 @@ public class DILCA {
             probability = occurrences / targetTotalOccurrences;
             targetEntropy -= probability * Math.log(probability) / log2;
         }
-        time4 += System.currentTimeMillis() - start;
 
-        start = System.currentTimeMillis();
         double attributeEntropy = 0;
         // Calculate attribute's entropy.
         double attributeTotalOccurrences = 0;
@@ -189,18 +166,7 @@ public class DILCA {
             probability = occurrences / attributeTotalOccurrences;
             attributeEntropy -= probability * Math.log(probability) / log2;
         }
-        time5 += System.currentTimeMillis() - start;
 
-        start = System.currentTimeMillis();
-        /* // Calculate conditional entropy of target attribute with respect to the given attribute.
-        double conditionalEntropy = 0;
-        for (int i = 0; i < cooccurrences.length; i++) {
-            double attributeValueTotalOccurrences = targetOccurrences[i][i];
-            for (int j = 0; j < cooccurrences[i].length; j++) {
-                probability = (double) cooccurrences[i][j] / attributeValueTotalOccurrences;
-                conditionalEntropy -= probability * Math.log(probability) / log2;
-            }
-        } */
         // Calculate conditional entropy of target attribute with respect to the given attribute.
         // TODO: Make this part faster.
         double conditionalEntropy = 0;
@@ -217,7 +183,6 @@ public class DILCA {
             }
             conditionalEntropy += (attributeValueTotalOccurrences / attributeTotalOccurrences) * currentValueEntropy;
         }
-        time6 += System.currentTimeMillis() - start;
 
         // Calculate symmetrical uncertainty.
         if (0 == targetEntropy && 0 == attributeEntropy) {
@@ -236,10 +201,8 @@ public class DILCA {
         double[] valueDistances;
 
         for (int i = 0; i < distances.length; i++) {
-            valueDistances = distances[i];
-
-            for (int j = 0; j < valueDistances.length; j++) {
-                sum += valueDistances[j];
+            for (int j = 0; j < distances[i].length; j++) {
+                sum += distances[i][j] * distances[i][j];
             }
         }
 
