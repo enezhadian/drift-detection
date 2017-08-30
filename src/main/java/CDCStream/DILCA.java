@@ -53,11 +53,6 @@ public class DILCA {
 
         int targetDomainSize = statistics.domainSize(targetAttributeIndex);
 
-        System.out.println("dilca");
-        System.out.println(symmetricalUncertainty(statistics, 2, 1));
-        System.out.println(symmetricalUncertainty(statistics, 2, 4));
-        System.out.println(symmetricalUncertainty(statistics, 2, 0));
-
         // Build the distance matrix.
         double[][] distances = new double[targetDomainSize - 1][];
         for (int i = 0; i < distances.length; i++) {
