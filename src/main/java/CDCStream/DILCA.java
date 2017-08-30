@@ -103,16 +103,14 @@ public class DILCA {
     private static Set<Integer> contextAttributeIndexesFor(DatabaseStatistics statistics,
                                                            int targetAttributeIndex) {
         int numAttributes = statistics.numAttributes();
-        List<Double> uncertainties = new ArrayList<>(numAttributes);
+        Map<Integer, Double> uncertainties = new HashMap<>(numAttributes);
         List<Integer> indexes = new ArrayList<>(numAttributes);
 
         // Calculate attribute relevance.
         for (int i = 0; i < numAttributes; i++) {
             if (i != targetAttributeIndex) {
                 indexes.add(i);
-                uncertainties.add(symmetricalUncertainty(statistics, targetAttributeIndex, i));
-            } else {
-                uncertainties.add(null);
+                uncertainties.put(i, symmetricalUncertainty(statistics, targetAttributeIndex, i));
             }
         }
 
@@ -124,7 +122,7 @@ public class DILCA {
         for (int i = 0; i < indexes.size(); i++) {
             firstAttribute = indexes.get(i);
             if (-1 != firstAttribute) {
-                for (int j = i; j < indexes.size(); j++) {
+                for (int j = i + 1; j < indexes.size(); j++) {
                     secondAttribute = indexes.get(j);
                     if (-1 != secondAttribute && symmetricalUncertainty(statistics, firstAttribute, secondAttribute) <=
                             uncertainties.get(secondAttribute)) {
@@ -225,7 +223,7 @@ public class DILCA {
         if (0 == targetEntropy && 0 == attributeEntropy) {
             return 0;
         } else {
-            return (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEntropy);
+            return 2 * (targetEntropy - conditionalEntropy) / (targetEntropy + attributeEntropy);
         }
     }
 
