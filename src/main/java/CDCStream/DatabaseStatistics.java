@@ -30,7 +30,10 @@ import java.util.Map;
 
 class DatabaseStatistics {
 
-    // TODO: Make this faster.
+    /*--------------------------------------------------------------------------*
+     *                       INSTANCE MEMBERS AND METHODS                       *
+     *--------------------------------------------------------------------------*/
+
     DatabaseStatistics(ImmutableList<ImmutableList<String>> database) {
         if (database.size() == 0) {
             throw new IllegalArgumentException("Database cannot be empty.");
