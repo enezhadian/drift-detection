@@ -79,7 +79,7 @@ public class DriftDetector {
                     for (double summary : summaries) {
                         standardDeviation += Math.pow(summary - mean, 2);
                     }
-                    standardDeviation /= summaries.size();
+                    standardDeviation = Math.sqrt(standardDeviation / summaries.size());
 
                     // Update `maxStandardDeviation` and `minStandardDeviation` if needed.
                     if (maxStandardDeviation < standardDeviation) {
@@ -126,10 +126,12 @@ public class DriftDetector {
         double summary = 0;
         for (int attribute = 0; attribute < numAttributes; attribute++) {
             summary += DILCA.distanceMatrixFor(statistics, attribute).normalizedSquaredSumRoot();
+            // System.out.print(".");
+            // System.out.flush();
         }
         summary /= numAttributes;
+        // System.out.println();
 
-        System.out.println();
         return summary;
     }
 
