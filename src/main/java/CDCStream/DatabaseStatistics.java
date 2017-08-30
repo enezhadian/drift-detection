@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 
-class DatabaseStatistics {
+public class DatabaseStatistics {
 
     // TODO: Make this faster.
     public DatabaseStatistics(ImmutableList<ImmutableList<String>> database) {
@@ -102,8 +102,8 @@ class DatabaseStatistics {
 
     private final ImmutableList<ImmutableList<String>> database;
     private final int numAttributes;
-    private final List<Map<String, Integer>> attributeDomains;
-    private final int[][][][] cooccurrences;
+    public final List<Map<String, Integer>> attributeDomains;
+    public final int[][][][] cooccurrences;
 
 }
 

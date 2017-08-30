@@ -83,8 +83,8 @@ public class DILCA {
         start = System.currentTimeMillis();
         // Calculate total sum of domain sizes for all attributes.
         double totalContextDomainSizes = 0;
-        for (int i = 0; i < numAttributes; i++) {
-            totalContextDomainSizes += statistics.domainSize(i);
+        for (int attributeIndex : contextAttributeIndexes) {
+            totalContextDomainSizes += statistics.domainSize(attributeIndex);
         }
 
         // Normalize sum of squared differences.
@@ -251,7 +251,7 @@ public class DILCA {
         }
     }
 
-    private double[][] distances;
+    public double[][] distances;
 
     private DILCA(double[][] distances) {
         this.distances = distances;
