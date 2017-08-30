@@ -51,8 +51,12 @@ public class DILCA {
         // Find context attributes.
         Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(statistics, targetAttributeIndex);
 
-        int numAttributes = statistics.numAttributes();
         int targetDomainSize = statistics.domainSize(targetAttributeIndex);
+
+        System.out.println("dilca");
+        System.out.println(symmetricalUncertainty(statistics, 2, 1));
+        System.out.println(symmetricalUncertainty(statistics, 2, 4));
+        System.out.println(symmetricalUncertainty(statistics, 2, 0));
 
         // Build the distance matrix.
         double[][] distances = new double[targetDomainSize - 1][];
@@ -118,7 +122,7 @@ public class DILCA {
         }
 
         // Sort indexes in descending order based on their corresponding symmetrical uncertainty.
-        indexes.sort((i, j) -> (int) Math.signum(uncertainties.get(i) - uncertainties.get(j)));
+        indexes.sort((i, j) -> (int) Math.signum(uncertainties.get(j) - uncertainties.get(i)));
 
         // Remove redundant attributes.
         int firstAttribute, secondAttribute;
@@ -208,15 +212,17 @@ public class DILCA {
         // TODO: Make this part faster.
         double conditionalEntropy = 0;
         for (int i = 0; i < cooccurrences.length; i++) {
+            double currentValueEntropy = 0;
+            attributeValueTotalOccurrences = attributeOccurrences[i][i];
             for (int j = 0; j < cooccurrences[i].length; j++) {
                 occurrences = cooccurrences[i][j];
                 if (0 == occurrences) {
                     continue;
                 }
-                attributeValueTotalOccurrences = attributeOccurrences[i][i];
                 probability = occurrences / attributeValueTotalOccurrences;
-                conditionalEntropy -= probability * Math.log(probability) / log2;
+                currentValueEntropy -= probability * Math.log(probability) / log2;
             }
+            conditionalEntropy += (attributeValueTotalOccurrences / attributeTotalOccurrences) * currentValueEntropy;
         }
         time6 += System.currentTimeMillis() - start;
 
