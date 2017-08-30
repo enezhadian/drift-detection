@@ -25,14 +25,14 @@ import java.util.*;
 import com.google.common.collect.ImmutableSet;
 
 
-public class DILCA {
+class DILCA {
 
     /*--------------------------------------------------------------------------*
      *                        STATIC MEMBERS AND METHODS                        *
      *--------------------------------------------------------------------------*/
 
     // TODO: Store every retrieved attribute in a local variable.
-    public static DILCA distanceMatrixFor(DatabaseStatistics statistics,
+    static DILCA distanceMatrixFor(DatabaseStatistics statistics,
                                           int targetAttributeIndex) {
         // Find context attributes.
         Set<Integer> contextAttributeIndexes = contextAttributeIndexesFor(statistics, targetAttributeIndex);
@@ -48,9 +48,7 @@ public class DILCA {
         int[][] cooccurrences;
         double[] valueDistances;
 
-        // TODO: Make this part faster.
         for (int attributeIndex : contextAttributeIndexes) {
-            // TODO: Also check the other order.
             cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
             // Calculate the sum of squared differences over all the values of current context attribute.
             for (int i = 0; i < cooccurrences.length; i++) {
@@ -132,7 +130,6 @@ public class DILCA {
 
         int[][] targetOccurrences = statistics.cooccurrencesFor(targetAttributeIndex, targetAttributeIndex);
         int[][] attributeOccurrences = statistics.cooccurrencesFor(attributeIndex, attributeIndex);
-        /* int[][] cooccurrences = statistics.cooccurrencesFor(targetAttributeIndex, attributeIndex); */
         int[][] cooccurrences = statistics.cooccurrencesFor(attributeIndex, targetAttributeIndex);
 
         double probability, occurrences, attributeValueTotalOccurrences;
@@ -168,7 +165,6 @@ public class DILCA {
         }
 
         // Calculate conditional entropy of target attribute with respect to the given attribute.
-        // TODO: Make this part faster.
         double conditionalEntropy = 0;
         for (int i = 0; i < cooccurrences.length; i++) {
             double currentValueEntropy = 0;
@@ -196,9 +192,8 @@ public class DILCA {
      *                       INSTANCE MEMBERS AND METHODS                       *
      *--------------------------------------------------------------------------*/
 
-    public double normalizedSquaredSumRoot() {
+    double normalizedSquaredSumRoot() {
         double sum = 0;
-        double[] valueDistances;
 
         for (int i = 0; i < distances.length; i++) {
             for (int j = 0; j < distances[i].length; j++) {
@@ -213,7 +208,7 @@ public class DILCA {
         }
     }
 
-    public double[][] distances;
+    double[][] distances;
 
     private DILCA(double[][] distances) {
         this.distances = distances;

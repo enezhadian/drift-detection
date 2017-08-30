@@ -63,7 +63,6 @@ public class DriftDetector {
                     color = "\033[1;31m";
                 }
 
-                // TODO: Report concept drift in more useful way.
                 System.out.println(color + "*** CHANGE: "  + changeDegree + " ***\033[0m");
 
                 lastBlock = currentBlock;

@@ -28,15 +28,14 @@ import java.util.List;
 import java.util.Map;
 
 
-public class DatabaseStatistics {
+class DatabaseStatistics {
 
     // TODO: Make this faster.
-    public DatabaseStatistics(ImmutableList<ImmutableList<String>> database) {
+    DatabaseStatistics(ImmutableList<ImmutableList<String>> database) {
         if (database.size() == 0) {
             throw new IllegalArgumentException("Database cannot be empty.");
         }
 
-        this.database = database;
         this.numAttributes = database.get(0).size();
 
         this.attributeDomains = new ArrayList<>(numAttributes);
@@ -88,22 +87,21 @@ public class DatabaseStatistics {
         }
     }
 
-    public int[][] cooccurrencesFor(int lesserAttributeIndex, int greaterAttributeIndex) {
+    int[][] cooccurrencesFor(int lesserAttributeIndex, int greaterAttributeIndex) {
         return cooccurrences[lesserAttributeIndex][greaterAttributeIndex];
     }
 
-    public int numAttributes() {
+    int numAttributes() {
         return numAttributes;
     }
 
-    public int domainSize(int attributeIndex) {
+    int domainSize(int attributeIndex) {
         return attributeDomains.get(attributeIndex).size();
     }
 
-    private final ImmutableList<ImmutableList<String>> database;
     private final int numAttributes;
-    public final List<Map<String, Integer>> attributeDomains;
-    public final int[][][][] cooccurrences;
+    private final List<Map<String, Integer>> attributeDomains;
+    private final int[][][][] cooccurrences;
 
 }
 
