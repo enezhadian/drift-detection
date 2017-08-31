@@ -34,7 +34,7 @@ public class DriftDetector {
      *                       INSTANCE MEMBERS AND METHODS                       *
      *--------------------------------------------------------------------------*/
 
-    public DriftDetector(ItemsetStreamReader stream, int blockSize, int minFrequency,
+    public DriftDetector(ItemsetStreamReader stream, int blockSize, double minSupport, // int minFrequency,
                          double maxImprovementRate, double minCodeTableDifference,
                          int numSamples, double nSigma) throws IllegalArgumentException {
 
@@ -44,7 +44,8 @@ public class DriftDetector {
 
         this.stream = stream;
         this.blockSize = blockSize;
-        this.minFrequency = minFrequency;
+//        this.minFrequency = minFrequency;
+        this.minSupport = minSupport;
         this.maxImprovementRate = maxImprovementRate;
         this.minCodeTableDifference = minCodeTableDifference;
         this.numSamples = numSamples;
@@ -77,16 +78,15 @@ public class DriftDetector {
                     doSample = true;
                 } else {
                     if (difference < 0) {
-                        System.out.print("\033[1;31m*** DIFF: " + difference);
+                        System.out.print("\033[1;31m*** DIFF: ");
                     } else {
-                        System.out.print("\033[1;33m*** DIFF: " + difference);
+                        System.out.print("\033[1;33m*** DIFF: ");
                     }
 
                     stream.discard(blockSize);
                     doSample = false;
                 }
-                // System.out.println(" *** ROW: " + lastRowOfCurrentCodeTable + " ***\033[0m");
-                System.out.println(" *** ROW: " + convergedHead.size() + " ***\033[0m");
+                System.out.println(difference + " LEN: " + len + " NEW LEN: " + newLen + " ***\033[0m");
             }
         } catch (NoSuchElementException e) {
             System.out.println("Done.");
@@ -95,7 +95,8 @@ public class DriftDetector {
 
     private final ItemsetStreamReader stream;
     private final int blockSize;
-    private final int minFrequency;
+//    private final int minFrequency;
+    private final double minSupport;
     private final double maxImprovementRate;
     private final double minCodeTableDifference;
     private final int numSamples;
@@ -113,7 +114,8 @@ public class DriftDetector {
         int sliceSize = blockSize;
 
         convergedHead = stream.head(sliceSize);
-        convergedCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minFrequency);
+//        convergedCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minFrequency);
+        convergedCodeTable = CodeTable.optimalFor(convergedHead, stream.items(), minSupport);
 
         ImmutableList<ImmutableSet<String>> newHead;
         CodeTable newCodeTable;
@@ -121,7 +123,8 @@ public class DriftDetector {
         do {
             sliceSize += blockSize;
             newHead = stream.head(sliceSize);
-            newCodeTable = CodeTable.optimalFor(newHead, stream.items(), minFrequency);
+//            newCodeTable = CodeTable.optimalFor(newHead, stream.items(), minFrequency);
+            newCodeTable = CodeTable.optimalFor(newHead, stream.items(), minSupport);
 
             len = convergedCodeTable.totalLengthOf(convergedHead);
             newLen = newCodeTable.totalLengthOf(convergedHead);

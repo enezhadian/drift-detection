@@ -73,8 +73,6 @@ public class ItemsetStreamReader {
     private ImmutableList<ImmutableSet<String>> head;
     private final ImmutableList<String> items;
 
-    public int read = 0;
-
     private void expandHeadTo(int maxSize) throws NoSuchElementException {
         if (head != null && head.size() >= maxSize) {
             // Head is already big enough.
@@ -92,8 +90,6 @@ public class ItemsetStreamReader {
         String line;
         try {
             while (size < maxSize && (line = reader.readLine()) != null) {
-                read++;
-
                 size++;
                 ImmutableSet.Builder<String> setBuilder = ImmutableSet.builder();
 
@@ -118,9 +114,7 @@ public class ItemsetStreamReader {
         System.out.println("Skipping " + maxSize + " lines without processing.");
         try {
             // Skip `maxSize` lines from input file.
-            for (int size = 0; size < maxSize && reader.readLine() != null; size++) {
-                read++;
-            }
+            for (int size = 0; size < maxSize && reader.readLine() != null; size++);
         } catch (IOException e) {
             // Simply continue as there are no more transactions to be read.
         }

@@ -26,7 +26,7 @@ import DataStreamReader.*;
 
 public class Main {
 
-    public static void runCDDA() throws Exception {
+    static void runCDDA() throws Exception {
         final int blockSize = 10000;
         final double minChangeDegree = 0.1;
 
@@ -34,7 +34,7 @@ public class Main {
         new CDDA.DriftDetector(stream, blockSize, minChangeDegree).run();
     }
 
-    public static void runCDCStream() throws Exception {
+    static void runCDCStream() throws Exception {
         final int blockSize = 10000;
         final double driftCoefficient = 3;
 
@@ -42,12 +42,13 @@ public class Main {
         new CDCStream.DriftDetector(stream, blockSize, driftCoefficient).run();
     }
 
-    public static void runStreamKrimp() throws Exception {
-        final String inputFilePath = "data/wine.txt";
+    static void runStreamKrimp() throws Exception {
+        final String inputFilePath = "data/anneal.txt";
         final String delimiterRegex = "\\s";
-        final int numItems = 68;
-        final int blockSize = numItems;
-        final int minFreq = 5;
+        final int numItems = 71;
+        final int blockSize = 80;
+//        final int minFreq = 100;
+        final double minSup = 0.1;
         final double maxIR = 0.02;
         final double minCTD = 0.1;
         final int numSamples = 100;
@@ -59,8 +60,8 @@ public class Main {
         }
 
         ItemsetStreamReader stream = new ItemsetStreamReader(inputFilePath, delimiterRegex, items);
-        new StreamKrimp.DriftDetector(stream, blockSize, minFreq, maxIR, minCTD, numSamples, nSigma).run();
-        System.out.println("Processed " + stream.read + " transactions.");
+//        new StreamKrimp.DriftDetector(stream, blockSize, minFreq, maxIR, minCTD, numSamples, nSigma).run();
+        new StreamKrimp.DriftDetector(stream, blockSize, minSup, maxIR, minCTD, numSamples, nSigma).run();
     }
 
     public static void main(String[] args) throws Exception {

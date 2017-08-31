@@ -37,14 +37,16 @@ public class CodeTable {
 
     public static CodeTable optimalFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                        List<String> items,
-                                       int minFrequency) {
+                                       double minSupport) {
+//                                       int minFrequency) {
         // TODO: Tidy up this method.
         // These three lists are used as to get results from `findOptimalCodeLengthsFor`.
         List<ImmutableSet<String>> itemsets = new ArrayList<>();
         List<ImmutableSet<String>> candidates = new ArrayList<>();
         List<ImmutableSet<String>> singletons = new ArrayList<>();
 
-        findCandidatesFor(streamSlice, items, minFrequency, singletons, candidates);
+//        findCandidatesFor(streamSlice, items, minFrequency, singletons, candidates);
+        findCandidatesFor(streamSlice, items, minSupport, singletons, candidates);
         System.out.println("Found " + singletons.size() + " Singletons and " + candidates.size() + " candidates.");
 
         List<Integer> usageCounts = new ArrayList<>(candidates.size());
@@ -117,7 +119,8 @@ public class CodeTable {
 
     private static void findCandidatesFor(ImmutableList<ImmutableSet<String>> streamSlice,
                                           List<String> items,
-                                          int minFrequency,
+//                                          int minFrequency,
+                                          double minSupport,
                                           List<ImmutableSet<String>> outputSingletons,
                                           List<ImmutableSet<String>> outputCandidates) {
         if (outputSingletons == null || outputCandidates == null) {
@@ -125,7 +128,8 @@ public class CodeTable {
         }
 
         Map<ImmutableSet<String>, Integer> itemsetsWithFrequencies = new HashMap<>();
-        FrequentItemsetMiner.run(streamSlice, items, minFrequency, itemsetsWithFrequencies);
+//        FrequentItemsetMiner2.run(streamSlice, items, minFrequency, itemsetsWithFrequencies);
+        FrequentItemsetMiner2.run(streamSlice, items, minSupport, itemsetsWithFrequencies);
 
         // Populate `outputSingletons` with singletons.
         outputSingletons.clear();
@@ -270,7 +274,9 @@ public class CodeTable {
      *--------------------------------------------------------------------------*/
 
     public double totalLengthOf(ImmutableList<ImmutableSet<String>> streamSlice) {
-        return length() + lengthOf(streamSlice);
+        // TODO: Revert this.
+//        return length() + lengthOf(streamSlice);
+        return lengthOf(streamSlice);
     }
 
     private final ImmutableList<ImmutableSet<String>> itemsets;
