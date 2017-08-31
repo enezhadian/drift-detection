@@ -17,7 +17,8 @@ gradle-app.setting
 /data/
 
 # Temporary files.
-/tmp/
+/tmp/*
+!/tmp/.keep
 
 # Include dependencies.
 !libs/*.jar
