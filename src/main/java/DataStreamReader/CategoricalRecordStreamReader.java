@@ -68,6 +68,7 @@ public final class CategoricalRecordStreamReader extends DataStreamReader<Immuta
                 recordBuilder.add(value);
             }
             headBuilder.add(recordBuilder.build());
+            countSoFar++;
         }
 
         head = headBuilder.build();
@@ -82,6 +83,7 @@ public final class CategoricalRecordStreamReader extends DataStreamReader<Immuta
         // Skip `maxSize` records.
         for (int size = 0; size < maxSize && csvRecords.hasNext(); size++) {
             csvRecords.next();
+            countSoFar++;
         }
     }
 

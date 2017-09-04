@@ -52,16 +52,19 @@ public class DriftDetector {
         ImmutableList<ImmutableList<String>> block;
         List<Double> summaries = new ArrayList<>();
 
+        int lastCount = 0, currentCount = 0;
         try {
+            System.out.println("Found concepts:");
+
             for (int i = 0; i < 2; i++) {
                 block = stream.head(blockSize);
                 stream.discard(block.size());
 
                 summaries.add(summaryOf(block));
-                System.out.println("\033[1;31m*** Collecting information ***\033[0m");
             }
 
             while (true) {
+                currentCount = stream.countSoFar();
                 block = stream.head(blockSize);
                 stream.discard(block.size());
 
@@ -94,21 +97,20 @@ public class DriftDetector {
                     standardDeviation = (minStandardDeviation + maxStandardDeviation) / 2;
                 }
 
-                String color;
                 absoluteDifference = Math.abs(blockSummary - mean);
                 threshold = driftCoefficient * standardDeviation;
                 if (absoluteDifference >= threshold) {
-                    color = "\033[1;32m";
+                    System.out.println(lastCount + "-" + currentCount);
+                    lastCount = currentCount + 1;
                     summaries.clear();
-                } else {
-                    color = "\033[1;31m";
                 }
-                System.out.println(color + "*** DIFF: "  + absoluteDifference +
-                        ", THRESHOLD: " + threshold + " ***\033[0m");
 
                 summaries.add(blockSummary);
             }
         } catch (NoSuchElementException e) {
+            if (currentCount >= lastCount) {
+                System.out.println(lastCount + "-" + currentCount);
+            }
             System.out.println("Done.");
         }
     }

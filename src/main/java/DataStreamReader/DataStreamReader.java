@@ -54,7 +54,12 @@ abstract class DataStreamReader<Type> {
         }
     }
 
+    public int countSoFar() {
+        return countSoFar;
+    }
+
     protected ImmutableList<Type> head;
+    protected int countSoFar = 0;
 
     protected abstract void expandHeadTo(int maxSize) throws NoSuchElementException;
     protected abstract void skipLines(int maxSize);

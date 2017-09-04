@@ -43,31 +43,34 @@ public class DriftDetector {
     }
 
     public void run() {
+        int lastCount = 0, currentCount = 0;
         try {
             ImmutableList<ImmutableList<String>> lastBlock, currentBlock;
 
             lastBlock = stream.head(blockSize);
             stream.discard(lastBlock.size());
 
+            System.out.println("Found concepts:");
+
             double changeDegree;
-            String color;
             while (true) {
                 // Read a block from the stream.
+                currentCount = stream.countSoFar();
                 currentBlock = stream.head(blockSize);
                 stream.discard(currentBlock.size());
 
                 changeDegree = changeDegreeFor(lastBlock, currentBlock);
                 if (changeDegree >= minChangeDegree) {
-                    color = "\033[1;32m";
-                } else {
-                    color = "\033[1;31m";
+                    System.out.println(lastCount + "-" + currentCount);
+                    lastCount = currentCount + 1;
                 }
-
-                System.out.println(color + "*** CHANGE: "  + changeDegree + " ***\033[0m");
 
                 lastBlock = currentBlock;
             }
         } catch (NoSuchElementException e) {
+            if (currentCount >= lastCount) {
+                System.out.println(lastCount + "-" + currentCount);
+            }
             System.out.println("Done.");
         }
     }
